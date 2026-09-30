@@ -30,7 +30,7 @@ export function proxy(request: NextRequest) {
     res.cookies.set(
       SESSION_COOKIE,
       createSessionValue({ accountId: session.accountId, name: session.name, v: session.v }),
-      cookieOptions,
+      cookieOptions(request.headers),
     );
   }
   return res;

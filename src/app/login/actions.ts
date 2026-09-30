@@ -9,7 +9,8 @@ import { clearFailures, clientIp, isLockedOut, recordFailure } from "@/lib/rate-
 export type LoginState = { error?: string };
 
 export async function login(_prev: LoginState, form: FormData): Promise<LoginState> {
-  const ip = clientIp(await headers());
+  const h = await headers();
+  const ip = clientIp(h);
   if (isLockedOut(ip)) return { error: "Too many attempts. Try again in 15 minutes." };
 
   const account = String(form.get("account") ?? "");
@@ -25,7 +26,7 @@ export async function login(_prev: LoginState, form: FormData): Promise<LoginSta
   clearFailures(ip);
 
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, createSessionValue({ accountId: found.id, name, v: found.sessionVersion }), cookieOptions);
+  jar.set(SESSION_COOKIE, createSessionValue({ accountId: found.id, name, v: found.sessionVersion }), cookieOptions(h));
 
   const next = String(form.get("next") ?? "/");
   redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");

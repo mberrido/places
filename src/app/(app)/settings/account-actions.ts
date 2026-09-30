@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import {
@@ -46,7 +46,7 @@ export async function changeMyPassword(current: string, next: string): Promise<R
     (await cookies()).set(
       SESSION_COOKIE,
       createSessionValue({ accountId: session.accountId, name: session.name, v: account.sessionVersion + 1 }),
-      cookieOptions,
+      cookieOptions(await headers()),
     );
   }, "Password changed. Other devices will need to log in again.");
 }

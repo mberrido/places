@@ -216,10 +216,11 @@ Google's terms let us keep a `place_id` indefinitely, but other Places content
 ## Deploying to the Synology NAS (DS920+, DSM 7.2)
 
 Same pattern as weekly-shop: one container from a GitHub-built image, SQLite
-on a mounted folder, the port bound to **localhost only**, and DSM's reverse
-proxy providing public HTTPS on your synology.me name. HTTPS is required, not
-optional: the login cookie is `Secure`, and the phone only gives the app its
-location (for "near me") over HTTPS.
+on a mounted folder, reachable at **`http://<nas-ip>:8421`** on your home
+network, with DSM's reverse proxy giving it a public HTTPS address on your
+synology.me name for use away from home. The login cookie is only marked
+Secure when you come in over HTTPS, so the plain LAN address works too.
+Location ("near me") and the iPhone home-screen app need the HTTPS address.
 
 ### 1. Folders
 
@@ -263,7 +264,8 @@ GitHub token (classic) with only `read:packages`, then
   `/docker/places`, *Use existing docker-compose.yml* → Next → Done.
 - **SSH:** `cd /volume1/docker/places && sudo docker-compose pull && sudo docker-compose up -d`
 
-Check: `curl -s http://127.0.0.1:8421/api/health` → `{"ok":true,…}` and the
+Check: open `http://<nas-ip>:8421` (or `curl -s http://127.0.0.1:8421/api/health`
+→ `{"ok":true,…}`) and the
 container shows **Healthy**. The database is created and migrated on first start.
 
 **Bringing your local data across:** stop the container, copy your Mac's

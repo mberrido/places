@@ -13,8 +13,9 @@ services:
       DATABASE_PATH: /data/places.db
       BACKUP_DIR: /backups
     ports:
-      # Localhost only: reach it through DSM's reverse proxy (HTTPS). Don't forward 8421 on the router.
-      - "127.0.0.1:8421:8421"
+      # http://<nas-ip>:8421 on the home network, and DSM's reverse proxy (HTTPS) for outside.
+      # Don't forward 8421 on the router.
+      - "8421:8421"
     volumes:
       - ${DATA_DIR:-/volume1/docker/places/data}:/data
       - ${BACKUP_DIR:-/volume1/docker/places/backups}:/backups

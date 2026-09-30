@@ -74,11 +74,18 @@ export function safeEqual(a: string, b: string) {
   return crypto.timingSafeEqual(ha, hb);
 }
 
-export const cookieOptions = {
-  httpOnly: true,
-  // Secure in production (served over HTTPS by DSM); plain http on localhost in dev.
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: SESSION_MAX_AGE_S,
-};
+/**
+ * Cookie settings for this request. The cookie is Secure when the request came
+ * over HTTPS (DSM's reverse proxy sends X-Forwarded-Proto: https), and a normal
+ * cookie on plain http, e.g. http://<nas-ip>:8421 on the home network.
+ */
+export function cookieOptions(headers: Headers) {
+  const proto = headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  return {
+    httpOnly: true,
+    secure: proto === "https",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SESSION_MAX_AGE_S,
+  };
+}
