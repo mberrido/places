@@ -24,18 +24,18 @@ Needs Node 20.9+.
 ```sh
 npm install
 cp .env.example .env.local     # then fill in APP_PASSWORD and GOOGLE_PLACES_API_KEY
-npm run dev                    # http://localhost:3000
+npm run dev                    # http://localhost:3003
 ```
 
 - The database is created at `./data/places.db` on first request, and schema
   migrations in `drizzle/` run automatically on start.
 - Without `GOOGLE_PLACES_API_KEY` the app still works: Add falls back to manual
   entry and places show without Google data.
-- To try it on your iPhone on the same Wi-Fi: `npm run dev -- -H 0.0.0.0`, then
-  open `http://<your-mac's-LAN-IP>:3000`. (Location features need HTTPS, so
+- To try it on your iPhone on the same Wi-Fi:
+  open `http://<your-mac's-LAN-IP>:3003`. (Location features need HTTPS, so
   "near me" only works on localhost or once deployed.)
 
-To test in the Mac browser at `http://127.0.0.1:3000` or from a phone, those
+To test in the Mac browser at `http://127.0.0.1:3003` or from a phone, those
 hosts are allowed in `allowedDevOrigins` in `next.config.ts`. Without that,
 Next blocks the dev scripts and buttons silently do nothing.
 
@@ -224,11 +224,10 @@ location (for "near me") over HTTPS.
 ### 1. Folders
 
 1. **Container Manager** installed (Package Center); this creates the `docker` shared folder.
-2. In **File Station**: create `docker/places/data`.
-3. For backups on a separate folder: **Control Panel → Shared Folder → Create**
-   a shared folder called `backups` (if you don't have one), then create
-   `backups/places` inside it.
-4. Find your DSM user's uid/gid over SSH: `id` → e.g. `uid=1026 gid=100`.
+2. In **File Station**: create `docker/places/data` and `docker/places/backups`.
+   (To keep backups on a separate shared folder instead, create it and change
+   the `/backups` volume in `docker-compose.yml`.)
+3. Find your DSM user's uid/gid over SSH: `id` → e.g. `uid=1026 gid=100`.
    Both folders you created are already owned by that user.
 
 ### 2. Compose file and `.env`
@@ -312,18 +311,18 @@ Schema changes in `drizzle/` are applied automatically on start.
 ### 6. Backups
 
 - **Nightly snapshots:** after 03:00 each night the app writes
-  `places-YYYY-MM-DD.db` to `backups/places` using SQLite's online backup API
+  `places-YYYY-MM-DD.db` to `docker/places/backups` using SQLite's online backup API
   (consistent even while the app is writing) and keeps the last 14. It catches up
   on start-up if the NAS was off at 03:00. Settings → Backups shows the latest
   and has **Back up now**.
-- **Off-NAS copy:** add `backups/places` and `docker/places` (for `.env` and
-  the session secret) to a **Hyper Backup** task, with client-side encryption
-  on, since `.env` holds API keys.
+- **Off-NAS copy:** add `docker/places` (the database, its nightly snapshots,
+  `.env` and the session secret) to a **Hyper Backup** task, with client-side
+  encryption on, since `.env` holds API keys.
 - **Restore:**
   ```sh
   cd /volume1/docker/places
   sudo docker-compose stop
-  cp /volume1/backups/places/places-2026-10-01.db data/places.db
+  cp backups/places-2026-10-01.db data/places.db
   rm -f data/places.db-wal data/places.db-shm
   sudo docker-compose start
   ```
@@ -343,7 +342,7 @@ Each household has its own token, which decides whose inbox a share goes to,
 so your friend builds (or imports) the Shortcut with *their* token.
 The endpoint must be reachable from the phone: the public
 `https://places.<name>.synology.me/api/ingest` once deployed, or
-`http://<mac-ip>:3000/api/ingest` on home Wi-Fi while testing.
+`http://<mac-ip>:3003/api/ingest` on home Wi-Fi while testing.
 
 Build it once in the **Shortcuts** app, then share it to your wife's phone with
 Share → Copy iCloud Link (edit the `by` value after she imports it):

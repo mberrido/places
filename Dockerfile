@@ -22,7 +22,7 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
+    PORT=8421 \
     HOSTNAME=0.0.0.0 \
     DATABASE_PATH=/data/places.db \
     BACKUP_DIR=/backups \
@@ -46,8 +46,8 @@ ENV APP_VERSION=$GIT_SHA
 RUN mkdir -p /data /backups /app/.next/cache && chown 1000:1000 /data /backups /app/.next/cache
 USER 1000
 
-EXPOSE 3000
+EXPOSE 8421
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+  CMD ["node", "-e", "fetch('http://127.0.0.1:8421/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 
 CMD ["node", "server.js"]

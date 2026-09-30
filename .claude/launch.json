@@ -4,7 +4,10 @@
     {
       "name": "places-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "3003"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3003
     }
   ]

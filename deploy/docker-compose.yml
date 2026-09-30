@@ -14,11 +14,11 @@ services:
       BACKUP_DIR: /backups
     ports:
       # Localhost only: reach it through DSM's reverse proxy (HTTPS). Don't forward 8421 on the router.
-      - "127.0.0.1:8421:3000"
+      - "127.0.0.1:8421:8421"
     volumes:
       - /volume1/docker/places/data:/data
-      # Nightly database snapshots, kept in a separate shared folder.
-      - /volume1/backups/places:/backups
+      # Nightly database snapshots.
+      - /volume1/docker/places/backups:/backups
     read_only: true
     tmpfs:
       - /tmp
