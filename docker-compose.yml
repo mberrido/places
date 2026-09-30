@@ -1,0 +1,37 @@
+# Builds from source. On the NAS, deploy/docker-compose.yml (prebuilt image) is simpler.
+services:
+  places:
+    build:
+      context: .
+    image: places:latest
+    container_name: places
+    restart: unless-stopped
+    user: "${PUID:-1026}:${PGID:-100}"
+    env_file: .env
+    environment:
+      TZ: Europe/London
+      DATABASE_PATH: /data/places.db
+      BACKUP_DIR: /backups
+    ports:
+      # Localhost only: reach it through DSM's reverse proxy (HTTPS). Don't forward 8421 on the router.
+      - "127.0.0.1:8421:3000"
+    volumes:
+      - ${DATA_DIR:-/volume1/docker/places/data}:/data
+      - ${BACKUP_DIR:-/volume1/backups/places}:/backups
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - places
+
+networks:
+  places:
+    ipam:
+      config:
+        - subnet: 172.30.85.0/24
+          gateway: 172.30.85.1

@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+.claude
+data
+public/vendor
+.env
+.env.*
+!.env.example
+*.md
+deploy
+Dockerfile
+docker-compose.yml
+.DS_Store
