@@ -20,10 +20,11 @@ export async function GET(req: NextRequest) {
       existing: existing ?? null,
     });
   } catch (e) {
-    if (e instanceof GoogleUnavailable) {
-      console.error(e.message);
-      return Response.json({ error: "Couldn't load details from Google", existing: existing ?? null }, { status: 502 });
-    }
-    throw e;
+    // Anything else (e.g. data in a shape we didn't expect) still answers in
+    // JSON, so the app shows a real message rather than "check your connection".
+    console.error(`details ${id}:`, e);
+    const message =
+      e instanceof GoogleUnavailable ? "Couldn't load details from Google" : "Couldn't read Google's details for that place";
+    return Response.json({ error: message, existing: existing ?? null }, { status: 502 });
   }
 }

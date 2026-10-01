@@ -173,7 +173,7 @@ type RawPlace = {
   id: string;
   displayName?: { text: string };
   formattedAddress?: string;
-  addressComponents?: { longText: string; shortText: string; types: string[] }[];
+  addressComponents?: { longText?: string; shortText?: string; types?: string[] }[];
   location?: { latitude: number; longitude: number };
   rating?: number;
   userRatingCount?: number;
@@ -220,8 +220,9 @@ export type PlaceDetails = {
 
 function component(p: RawPlace, ...types: string[]) {
   for (const t of types) {
-    const c = p.addressComponents?.find((c) => c.types.includes(t));
-    if (c) return c.longText;
+    // Some components come without a types list (e.g. The Ibiza Twiins).
+    const c = p.addressComponents?.find((c) => c.types?.includes(t));
+    if (c?.longText) return c.longText;
   }
   return null;
 }
