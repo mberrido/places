@@ -6,7 +6,7 @@ import { Icon } from "../icons";
 
 const OPEN = 76; // how far the row slides to show the delete button
 
-/** Swipe a row right to show a delete button; tap it to delete. */
+/** Swipe a row left to show a delete button; tap it to delete. */
 export function SwipeToDelete({ id, name, children }: { id: number; name: string; children: ReactNode }) {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -26,7 +26,7 @@ export function SwipeToDelete({ id, name, children }: { id: number; name: string
           setGone(true);
           start(() => removePlace(id));
         }}
-        className="absolute inset-y-0 left-0 grid place-items-center"
+        className="absolute inset-y-0 right-0 grid place-items-center"
         style={{ width: OPEN }}
       >
         <span className="grid size-11 place-items-center rounded-full bg-danger text-white">
@@ -51,13 +51,13 @@ export function SwipeToDelete({ id, name, children }: { id: number; name: string
           if (!s.horizontal) return;
           swiped.current = true;
           setDragging(true);
-          setOffset(Math.max(0, Math.min(OPEN + 24, s.base + dx)));
+          setOffset(Math.min(0, Math.max(-OPEN - 24, s.base + dx)));
         }}
         onTouchEnd={() => {
           if (!touch.current?.horizontal) return;
           touch.current = null;
           setDragging(false);
-          setOffset((o) => (o > OPEN / 2 ? OPEN : 0));
+          setOffset((o) => (o < -OPEN / 2 ? -OPEN : 0));
         }}
         onClickCapture={(e) => {
           // A swipe, or a tap while open, shouldn't open the place.
