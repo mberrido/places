@@ -36,7 +36,7 @@ async function original(photoName: string, key: string): Promise<Buffer> {
   if (!pending) {
     pending = (async () => {
       const { bytes } = await fetchPhoto(photoName, ORIGINAL_WIDTH);
-      const jpeg = await sharp(bytes).jpeg({ quality: 85 }).toBuffer();
+      const jpeg = await sharp(bytes, { limitInputPixels: 40_000_000 }).jpeg({ quality: 85 }).toBuffer();
       fs.mkdirSync(DIR, { recursive: true });
       fs.writeFileSync(p, jpeg);
       return jpeg;
@@ -53,7 +53,7 @@ export async function getPhoto(photoName: string, width: number): Promise<Buffer
   if (fresh(variant)) return fs.readFileSync(variant);
   const orig = await original(photoName, key);
   if (width >= ORIGINAL_WIDTH) return orig;
-  const small = await sharp(orig).resize({ width, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+  const small = await sharp(orig, { limitInputPixels: 40_000_000 }).resize({ width, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
   fs.writeFileSync(variant, small);
   return small;
 }

@@ -9,6 +9,7 @@ const ERRORS: Record<string, string> = {
   cancelled: "Sign-in was cancelled.",
   expired: "That sign-in took too long or was opened in another browser. Try again.",
   google: "Google couldn't sign you in. If you're new, ask for your Google address to be added as a test user.",
+  not_allowed: "That Google account isn't allowed on this server. Ask to be added to ALLOWED_EMAILS.",
   config: "Google sign-in isn't set up on this server (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).",
 };
 

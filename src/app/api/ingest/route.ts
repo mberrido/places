@@ -1,7 +1,7 @@
 import { after, type NextRequest } from "next/server";
 import { accountByIngestToken } from "@/lib/accounts";
 import { clientIp, isLockedOut, recordFailure } from "@/lib/rate-limit";
-import { processIngest, submitIngest, submitScreenshot } from "@/lib/ingest";
+import { IngestError, MAX_REQUEST_BYTES, processIngest, submitIngest, submitScreenshot } from "@/lib/ingest";
 
 /**
  * Endpoint for the iOS Shortcut (and anything else with a household's token).
@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
     recordFailure(ip);
     return reply(401, "Wrong token. Check the Authorization header in the Shortcut.");
   }
+
+  if (Number(req.headers.get("content-length")) > MAX_REQUEST_BYTES) return reply(413, "That's too big (15 MB max).");
 
   let input = "";
   let by: string | null = null;
@@ -59,7 +61,9 @@ export async function POST(req: NextRequest) {
     if (!result.existing) after(() => processIngest(result.id));
     return reply(202, result.existing ? "Already in the Places inbox" : "Sent to the Places inbox", result.id);
   } catch (e) {
-    return reply(400, (e as Error).message);
+    if (e instanceof IngestError) return reply(400, e.message);
+    console.error("ingest:", e);
+    return reply(500, "Something went wrong. Try again.");
   }
 }
 

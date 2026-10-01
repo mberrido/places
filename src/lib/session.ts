@@ -9,7 +9,7 @@ export const SESSION_MAX_AGE_S = 365 * 24 * 3600;
 const RENEW_AFTER_MS = 7 * 24 * 3600 * 1000;
 
 /** Who's signed in: the user (their group is looked up per request, so leaving or removal applies at once). */
-export type Session = { userId: number; iat: number };
+export type Session = { userId: number; iat: number; v: number };
 
 let cachedSecret: Buffer | undefined;
 
@@ -40,8 +40,9 @@ function sign(data: string) {
   return crypto.createHmac("sha256", key()).update(data).digest("base64url");
 }
 
-export function createSessionValue(userId: number): string {
-  const payload = Buffer.from(JSON.stringify({ userId, iat: Date.now() } satisfies Session)).toString("base64url");
+/** `version` is the user's sessionVersion; signing out bumps it, which ends every copy of the cookie. */
+export function createSessionValue(userId: number, version: number): string {
+  const payload = Buffer.from(JSON.stringify({ userId, iat: Date.now(), v: version } satisfies Session)).toString("base64url");
   return `${payload}.${sign(payload)}`;
 }
 
@@ -53,10 +54,11 @@ export function readSessionValue(value: string | undefined): Session | null {
   const given = Buffer.from(sig);
   if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) return null;
   try {
-    const s = JSON.parse(Buffer.from(payload, "base64url").toString()) as Session;
+    const s = JSON.parse(Buffer.from(payload, "base64url").toString()) as Partial<Session>;
     if (typeof s.userId !== "number" || typeof s.iat !== "number") return null;
+    s.v = typeof s.v === "number" ? s.v : 0; // cookies from before versions count as 0
     if (Date.now() - s.iat > SESSION_MAX_AGE_S * 1000) return null;
-    return s;
+    return s as Session;
   } catch {
     return null;
   }

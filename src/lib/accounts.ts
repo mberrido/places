@@ -19,13 +19,22 @@ export function upsertUser(p: GoogleProfile) {
   const existing = d.select().from(schema.users).where(eq(schema.users.googleSub, p.sub)).get();
   if (existing) {
     d.update(schema.users).set(fields).where(eq(schema.users.id, existing.id)).run();
-    return existing.id;
+    return { id: existing.id, sessionVersion: existing.sessionVersion };
   }
   return d
     .insert(schema.users)
     .values({ googleSub: p.sub, ...fields })
-    .returning({ id: schema.users.id })
-    .get().id;
+    .returning({ id: schema.users.id, sessionVersion: schema.users.sessionVersion })
+    .get();
+}
+
+/** Ends every session this person has, on every device. */
+export function endSessions(userId: number) {
+  db()
+    .update(schema.users)
+    .set({ sessionVersion: sql`${schema.users.sessionVersion} + 1` })
+    .where(eq(schema.users.id, userId))
+    .run();
 }
 
 export function groupMembers(accountId: number) {

@@ -37,6 +37,9 @@ export async function removeMemberAction(userId: number) {
   const s = await requireSession();
   if (userId === s.userId) throw new Error("Use Leave group to remove yourself");
   removeMember(s.accountId, userId);
+  // They've seen the join code and Shortcut token; replace both so they can't get back in.
+  regenerateJoinCode(s.accountId);
+  regenerateIngestToken(s.accountId);
   refresh();
 }
 

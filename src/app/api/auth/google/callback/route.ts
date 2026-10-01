@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { upsertUser } from "@/lib/accounts";
-import { LoginError, OAUTH_COOKIE, finishLogin, publicOrigin } from "@/lib/google-auth";
+import { LoginError, OAUTH_COOKIE, emailAllowed, finishLogin, publicOrigin } from "@/lib/google-auth";
 import { SESSION_COOKIE, cookieOptions, createSessionValue, safeEqual } from "@/lib/session";
 
 // Step 2: Google sends people back here with a code.
@@ -20,9 +20,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const profile = await finishLogin(origin, code, verifier);
-    const userId = upsertUser(profile);
+    if (!emailAllowed(profile.email)) {
+      console.error("google login: not on ALLOWED_EMAILS:", profile.email);
+      return fail("not_allowed");
+    }
+    const user = upsertUser(profile);
     const res = NextResponse.redirect(`${origin}/`);
-    res.cookies.set(SESSION_COOKIE, createSessionValue(userId), cookieOptions(req.headers));
+    res.cookies.set(SESSION_COOKIE, createSessionValue(user.id, user.sessionVersion), cookieOptions(req.headers));
     res.cookies.delete(OAUTH_COOKIE);
     return res;
   } catch (e) {

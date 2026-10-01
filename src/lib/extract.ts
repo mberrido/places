@@ -114,7 +114,7 @@ export async function extractPlaces(input: ExtractInput): Promise<Extraction> {
   } catch (e) {
     if (e instanceof Anthropic.AuthenticationError) throw new ExtractionUnavailable("The Anthropic API key was rejected");
     if (e instanceof Anthropic.RateLimitError) throw new ExtractionUnavailable("Claude is rate limited; try again shortly");
-    if (e instanceof Anthropic.APIError) throw new ExtractionUnavailable(`Claude API error ${e.status}: ${e.message}`);
+    if (e instanceof Anthropic.APIError) throw new ExtractionUnavailable(`Claude API error ${e.status}`);
     throw e;
   }
 

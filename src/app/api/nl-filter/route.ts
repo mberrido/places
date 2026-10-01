@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { requireSession } from "@/lib/auth";
+import { spendClaudeCall } from "@/lib/claude-usage";
 import { ExtractionUnavailable } from "@/lib/extract";
 import { parseNaturalFilter } from "@/lib/nl-filter";
 import { allTags, getCategories } from "@/lib/places";
@@ -11,6 +12,7 @@ export async function POST(req: NextRequest) {
   const q = String(text ?? "").trim().slice(0, 300);
   if (q.length < 3) return Response.json({ error: "Type a bit more" }, { status: 400 });
   try {
+    spendClaudeCall(accountId);
     const categories = getCategories(accountId).map((c) => ({ slug: c.slug, label: c.label }));
     return Response.json(await parseNaturalFilter(q, categories, allTags(accountId)));
   } catch (e) {

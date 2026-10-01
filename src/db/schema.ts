@@ -53,6 +53,8 @@ export const users = sqliteTable("users", {
   accountId: integer("account_id").references(() => accounts.id, { onDelete: "set null" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now),
   lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }).notNull().default(now),
+  /** Bumped on sign-out; session cookies carrying an older number stop working. */
+  sessionVersion: integer("session_version").notNull().default(0),
 });
 
 /** Editable category list, per account. `slug` is what places reference. */

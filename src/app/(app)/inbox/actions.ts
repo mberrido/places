@@ -33,7 +33,10 @@ export async function startIngest(_prev: IngestFormState, form: FormData): Promi
 
 export async function retryIngest(id: number) {
   const { accountId } = await requireSession();
-  if (!getIngest(accountId, id)) throw new Error("Inbox item not found");
+  const ingest = getIngest(accountId, id);
+  if (!ingest) throw new Error("Inbox item not found");
+  // Only failed items; retrying anything else would just spend another Claude call.
+  if (ingest.status !== "failed") return refresh();
   after(() => processIngest(id));
   refresh();
 }
@@ -41,6 +44,10 @@ export async function retryIngest(id: number) {
 export async function submitCaption(id: number, caption: string) {
   const { accountId } = await requireSession();
   if (caption.trim().length < 5) throw new Error("Paste a bit more of the caption");
+  // Only where the inbox offers a caption box: nothing read yet, or nothing found.
+  const ingest = getIngest(accountId, id);
+  const open = ingest && (ingest.status === "needs_text" || ingest.status === "failed" || (ingest.status === "ready" && !ingest.places?.length));
+  if (!open) throw new Error("This post has already been read");
   setIngestCaption(accountId, id, caption);
   after(() => processIngest(id));
   refresh();

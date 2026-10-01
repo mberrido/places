@@ -23,6 +23,18 @@ export function publicOrigin(headers: Headers) {
   return `${proto}://${host}`;
 }
 
+/**
+ * ALLOWED_EMAILS (comma separated) limits who can sign in. Empty means anyone
+ * with a Google account, so set it on any server reachable from the internet.
+ */
+export function emailAllowed(email: string) {
+  const list = (process.env.ALLOWED_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return !list.length || list.includes(email.trim().toLowerCase());
+}
+
 export const OAUTH_COOKIE = "places_oauth";
 
 export function startLogin(origin: string) {

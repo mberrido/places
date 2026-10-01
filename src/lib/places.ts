@@ -4,6 +4,7 @@ import { db, schema } from "@/db";
 import type { GoogleCache, Place, Status } from "@/db/schema";
 import type { PlaceSummary } from "./filters";
 import { openDays } from "./hours";
+import { fetchPublic } from "./safe-fetch";
 import { GoogleUnavailable, forgetDetails, placeDetails, type PlaceDetails } from "./google";
 
 export const STALE_AFTER_MS = 30 * 24 * 3600 * 1000;
@@ -267,14 +268,12 @@ export async function detectMenuUrl(website: string | null): Promise<string | nu
     const base = new URL(website);
     if (!/^https?:$/.test(base.protocol)) return null;
     if (/menu/i.test(base.pathname)) return base.toString();
-    const res = await fetch(base, {
-      signal: AbortSignal.timeout(5000),
+    const res = await fetchPublic(base, {
+      maxBytes: 1_000_000,
       headers: { "User-Agent": "Mozilla/5.0 (compatible; PlacesApp/1.0)", Accept: "text/html" },
-      redirect: "follow",
-      cache: "no-store",
     });
-    if (!res.ok || !res.headers.get("content-type")?.includes("html")) return null;
-    const html = (await res.text()).slice(0, 1_000_000);
+    if (!res?.contentType.includes("html")) return null;
+    const html = res.text;
     const links = [...html.matchAll(/<a\b[^>]*href\s*=\s*["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
     const candidates = links
       .map(([, href, text]) => ({ href, text: text.replace(/<[^>]+>/g, " ").trim() }))

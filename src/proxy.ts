@@ -27,7 +27,7 @@ export function proxy(request: NextRequest) {
   const res = NextResponse.next();
   // Sliding renewal so daily use never logs you out.
   if (shouldRenew(session)) {
-    res.cookies.set(SESSION_COOKIE, createSessionValue(session.userId), cookieOptions(request.headers));
+    res.cookies.set(SESSION_COOKIE, createSessionValue(session.userId, session.v), cookieOptions(request.headers));
   }
   return res;
 }

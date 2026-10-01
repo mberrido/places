@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db, schema } from "@/db";
 import type { User } from "@/db/schema";
+import { emailAllowed } from "./google-auth";
 import { SESSION_COOKIE, readSessionValue } from "./session";
 
 export type CurrentUser = {
@@ -22,7 +23,10 @@ export type CurrentUser = {
 export const getUser = cache(async (): Promise<User | null> => {
   const s = readSessionValue((await cookies()).get(SESSION_COOKIE)?.value);
   if (!s) return null;
-  return db().select().from(schema.users).where(eq(schema.users.id, s.userId)).get() ?? null;
+  const user = db().select().from(schema.users).where(eq(schema.users.id, s.userId)).get();
+  // Signed out since (on any device), or taken off ALLOWED_EMAILS.
+  if (!user || user.sessionVersion !== s.v || !emailAllowed(user.email)) return null;
+  return user;
 });
 
 /** The signed-in person and their group, or null if either is missing. */

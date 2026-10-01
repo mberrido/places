@@ -49,6 +49,8 @@ See [`.env.example`](.env.example). All keys are read on the server only and nev
 | Variable | Required | Notes |
 |---|---|---|
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | yes | The OAuth client for "Sign in with Google" (below). |
+| `ALLOWED_EMAILS` | on the NAS | Comma-separated Google emails allowed to sign in. Blank lets anyone with a Google account in. |
+| `CLAUDE_DAILY_LIMIT` | no | Claude reads per group per day (default 100). |
 | `APP_URL` | on the NAS | The public HTTPS address, e.g. `https://places.<name>.synology.me`. Google only sends people back there. Blank locally. |
 | `SESSION_SECRET` | no | Cookie signing key. If blank, one is generated into the data folder. |
 | `GOOGLE_PLACES_API_KEY` | for Google features | See below. |

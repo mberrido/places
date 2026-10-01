@@ -5,6 +5,7 @@ import { and, desc, eq, inArray, lt, notInArray, sql } from "drizzle-orm";
 import sharp from "sharp";
 import { DATABASE_PATH, db, schema } from "@/db";
 import type { ExtractedPlace, Ingest } from "@/db/schema";
+import { spendClaudeCall } from "./claude-usage";
 import { claudeConfigured, extractPlaces, ExtractionUnavailable, type ExtractInput } from "./extract";
 import { GoogleUnavailable, googleConfigured, placeDetails, textSearch } from "./google";
 import { fetchInstagramPost, isProfileUrl, normaliseInstagramUrl } from "./instagram";
@@ -12,6 +13,12 @@ import { findByGoogleId, getCategories, insertPlace } from "./places";
 
 /** A job stuck in "processing" this long was lost (e.g. the server restarted). */
 const STUCK_AFTER_MS = 5 * 60 * 1000;
+
+/** A problem to show the person as is (everything else gets a generic message). */
+export class IngestError extends Error {}
+
+/** Upload size, checked against Content-Length before reading the body. */
+export const MAX_REQUEST_BYTES = 16 * 1024 * 1024;
 
 function patch(id: number, fields: Partial<typeof schema.ingests.$inferInsert>) {
   db()
@@ -115,16 +122,17 @@ function screenshotPath(id: number) {
  * saved or dismissed. Throws a user-facing message for bad files.
  */
 export async function saveScreenshot(id: number, bytes: Buffer) {
-  if (bytes.length > MAX_UPLOAD_BYTES) throw new Error("That image is too big (15 MB max).");
+  if (bytes.length > MAX_UPLOAD_BYTES) throw new IngestError("That image is too big (15 MB max).");
   let jpeg: Buffer;
   try {
-    jpeg = await sharp(bytes)
+    // limitInputPixels: refuse huge images (a 16000×16000 PNG would need ~1 GB to decode).
+    jpeg = await sharp(bytes, { limitInputPixels: 40_000_000 })
       .rotate()
       .resize({ width: 1568, height: 1568, fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: 85 })
       .toBuffer();
   } catch {
-    throw new Error("That file isn't an image we can read.");
+    throw new IngestError("That file isn't an image we can read.");
   }
   fs.mkdirSync(UPLOADS, { recursive: true });
   fs.writeFileSync(screenshotPath(id), jpeg);
@@ -150,7 +158,7 @@ export async function submitScreenshot(
 ) {
   const existing = attachTo ? getIngest(accountId, attachTo) : null;
   if (attachTo && (!existing || existing.status === "done" || existing.status === "dismissed")) {
-    throw new Error("That inbox item isn't open any more.");
+    throw new IngestError("That inbox item isn't open any more.");
   }
   const id = existing?.id ?? createIngest({ accountId, via: "screenshot", addedBy });
   try {
@@ -264,6 +272,7 @@ export async function processIngest(id: number, extra: { image?: ExtractInput["i
       return;
     }
 
+    spendClaudeCall(ingest.accountId);
     const profile = isProfileUrl(ingest.url);
     const extraction = await extractPlaces({
       kind: profile ? "profile" : "post",
@@ -301,7 +310,7 @@ export async function processIngest(id: number, extra: { image?: ExtractInput["i
 
     patch(id, { status: "ready", places, summary: extraction.summary });
   } catch (e) {
-    const message = e instanceof ExtractionUnavailable ? e.message : `Something went wrong: ${(e as Error).message}`;
+    const message = e instanceof ExtractionUnavailable ? e.message : "Something went wrong reading this post.";
     console.error(`ingest ${id}:`, e);
     patch(id, { status: "failed", error: message });
   }
