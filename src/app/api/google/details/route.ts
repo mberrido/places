@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { requireSession } from "@/lib/auth";
 import { suggestCategory } from "@/lib/categories";
-import { GoogleUnavailable, placeDetails } from "@/lib/google";
+import { GoogleUnavailable, placePreview } from "@/lib/google";
 import { findByGoogleId, getCategories } from "@/lib/places";
 
 export async function GET(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const existing = findByGoogleId(accountId, id);
   try {
-    const details = await placeDetails(id, session);
+    const details = await placePreview(id, session);
     const slugs = getCategories(accountId).map((c) => c.slug);
     return Response.json({
       details,

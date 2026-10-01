@@ -98,16 +98,8 @@ export function NearMe({ onPick }: { onPick: (googlePlaceId: string) => Promise<
             const km = r.lat != null && r.lng != null ? haversineKm(loc, { lat: r.lat, lng: r.lng }) : null;
             const body = (
               <>
-                <span className="size-14 shrink-0 overflow-hidden rounded-lg bg-surface-2">
-                  {r.photoName && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={`/api/google/photo?name=${encodeURIComponent(r.photoName)}`}
-                      alt=""
-                      loading="lazy"
-                      className="size-full object-cover"
-                    />
-                  )}
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+                  <Icon name="pin" className="size-5" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">

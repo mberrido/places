@@ -19,7 +19,14 @@ export function googleConfigured() {
 }
 
 /** SKUs we count. Keys are what Settings shows. */
-export type GoogleApi = "autocomplete" | "details" | "details_location" | "photo" | "text_search" | "nearby_search";
+export type GoogleApi =
+  | "autocomplete"
+  | "details"
+  | "details_basic"
+  | "details_location"
+  | "photo"
+  | "text_search"
+  | "nearby_search";
 
 /**
  * Approximate free monthly calls per SKU (Google Maps Platform pricing). The
@@ -28,12 +35,13 @@ export type GoogleApi = "autocomplete" | "details" | "details_location" | "photo
  * GOOGLE_ALLOW_OVER_FREE=1 to lift the caps.
  */
 export const FREE_MONTHLY: Record<GoogleApi, number> = {
-  details: 1000,
-  details_location: 10000,
+  details: 1000, // Enterprise: website, phone, hours, rating
+  details_basic: 5000, // Pro: name, address, location, type, photos (the Add preview)
+  details_location: 5000, // Pro (displayName)
   photo: 1000,
   autocomplete: 10000,
-  text_search: 1000,
-  nearby_search: 1000,
+  text_search: 5000, // Pro: no rating fields
+  nearby_search: 1000, // Enterprise: includes rating
 };
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
@@ -261,7 +269,42 @@ function normalise(p: RawPlace): PlaceDetails {
   };
 }
 
-// Short-lived memo so "preview then save" costs one Details call, not two.
+/**
+ * Fields for the preview when you pick a place in Add: everything here is in
+ * the Pro tier (5,000 free a month). The full Enterprise details (website,
+ * phone, hours, rating) are fetched only when the place is saved.
+ */
+const PREVIEW_FIELDS = [
+  "id",
+  "displayName",
+  "formattedAddress",
+  "addressComponents",
+  "location",
+  "types",
+  "primaryType",
+  "googleMapsUri",
+  "utcOffsetMinutes",
+  "photos",
+].join(",");
+
+const previewMemo = new Map<string, { at: number; details: PlaceDetails }>();
+
+export async function placePreview(googlePlaceId: string, sessionToken?: string) {
+  const full = detailsMemo.get(googlePlaceId);
+  if (full && Date.now() - full.at < MEMO_MS) return full.details;
+  const memo = previewMemo.get(googlePlaceId);
+  if (memo && Date.now() - memo.at < MEMO_MS) return memo.details;
+
+  const url = new URL(`${BASE}/places/${encodeURIComponent(googlePlaceId)}`);
+  url.searchParams.set("languageCode", "en-GB");
+  if (sessionToken) url.searchParams.set("sessionToken", sessionToken);
+  const details = normalise(await call<RawPlace>("details_basic", url.toString(), { fieldMask: PREVIEW_FIELDS }));
+  previewMemo.set(googlePlaceId, { at: Date.now(), details });
+  if (previewMemo.size > 200) previewMemo.delete(previewMemo.keys().next().value!);
+  return details;
+}
+
+// Short-lived memo so saving the same place twice (or a retry) costs one Details call.
 const detailsMemo = new Map<string, { at: number; details: PlaceDetails }>();
 const MEMO_MS = 60 * 60 * 1000;
 
@@ -285,8 +328,8 @@ export function forgetDetails(googlePlaceId: string) {
 }
 
 /**
- * Just the coordinates of a place or town (for "distance from…"). Only
- * location fields, so it bills at the cheaper Essentials rate.
+ * Just the coordinates of a place or town (for "distance from…"). Name and
+ * location only, so it bills at the Pro rate.
  */
 export async function placeLocation(googlePlaceId: string, sessionToken?: string) {
   const url = new URL(`${BASE}/places/${encodeURIComponent(googlePlaceId)}`);
@@ -341,8 +384,6 @@ async function textSearchUncached(query: string, max: number): Promise<TextSearc
       "places.displayName",
       "places.formattedAddress",
       "places.location",
-      "places.rating",
-      "places.userRatingCount",
       "places.primaryType",
       "places.photos",
     ].join(","),
@@ -351,8 +392,9 @@ async function textSearchUncached(query: string, max: number): Promise<TextSearc
     googlePlaceId: p.id,
     name: p.displayName?.text ?? "",
     address: p.formattedAddress ?? null,
-    rating: p.rating ?? null,
-    userRatingCount: p.userRatingCount ?? null,
+    // Not asked for: rating fields would move every call to the Enterprise tier (1,000 free instead of 5,000).
+    rating: null,
+    userRatingCount: null,
     photoName: p.photos?.[0]?.name ?? null,
     primaryType: p.primaryType ?? null,
     lat: p.location?.latitude ?? null,
@@ -398,7 +440,6 @@ async function nearbySearchUncached(center: LatLng, radius: number, group: Nearb
       "places.rating",
       "places.userRatingCount",
       "places.primaryType",
-      "places.photos",
     ].join(","),
   });
   return (data.places ?? []).map((p) => ({
@@ -407,7 +448,7 @@ async function nearbySearchUncached(center: LatLng, radius: number, group: Nearb
     address: p.formattedAddress ?? null,
     rating: p.rating ?? null,
     userRatingCount: p.userRatingCount ?? null,
-    photoName: p.photos?.[0]?.name ?? null,
+    photoName: null, // no photos in Near me: up to 20 a search, each a paid call
     primaryType: p.primaryType ?? null,
     lat: p.location?.latitude ?? null,
     lng: p.location?.longitude ?? null,

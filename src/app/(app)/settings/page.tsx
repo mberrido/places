@@ -16,7 +16,8 @@ import { ShareSetup } from "./share-setup";
 export const metadata = { title: "Settings" };
 
 const APIS: { api: GoogleApi; label: string }[] = [
-  { api: "details", label: "Place Details" },
+  { api: "details", label: "Place Details (full, on save)" },
+  { api: "details_basic", label: "Place Details (preview)" },
   { api: "details_location", label: "Place Details (location only)" },
   { api: "photo", label: "Place Photos" },
   { api: "autocomplete", label: "Autocomplete" },

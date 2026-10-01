@@ -52,7 +52,8 @@ export async function createPlace(input: NewPlaceInput): Promise<SaveResult> {
   let details = null;
   if (p.googlePlaceId) {
     try {
-      details = await placeDetails(p.googlePlaceId, p.sessionToken ?? undefined);
+      // Full details only now, on save (the preview used the cheaper fields, which ended the search session).
+      details = await placeDetails(p.googlePlaceId);
     } catch (e) {
       if (!(e instanceof GoogleUnavailable)) throw e;
       console.error(e.message);
