@@ -4,6 +4,7 @@ import { formatCode, getAccount, groupMembers } from "@/lib/accounts";
 import { requireSession } from "@/lib/auth";
 import { claudeConfigured } from "@/lib/extract";
 import { FREE_MONTHLY, googleConfigured, type GoogleApi } from "@/lib/google";
+import { publicOrigin } from "@/lib/google-auth";
 import { getCategories } from "@/lib/places";
 import { logout } from "../../login/actions";
 import { headers } from "next/headers";
@@ -30,7 +31,8 @@ export default async function SettingsPage() {
   const me = getAccount(session.accountId)!;
   const h = await headers();
   // The address the app was reached on (behind DSM's proxy, its public HTTPS name).
-  const origin = `${h.get("x-forwarded-proto")?.split(",")[0] ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  // APP_URL (the public HTTPS address) when set, so the Shortcut works away from home too.
+  const origin = publicOrigin(h);
   // api_usage also holds the daily Claude counters (day keys); only monthly Google rows here.
   const usage = db()
     .select()
