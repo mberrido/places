@@ -163,7 +163,7 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
           ))}
         </section>
 
-        <TripPhotos placeId={place.id} photos={listTripPhotos(place.id)} />
+        {place.status === "been" && <TripPhotos placeId={place.id} photos={listTripPhotos(place.id)} />}
 
         {place.category === "hotel" && (
           <HotelBooking
