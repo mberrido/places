@@ -27,7 +27,8 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/api/photos/[plac
     .innerJoin(schema.places, eq(schema.places.id, schema.googleCache.placeId))
     .where(and(eq(schema.googleCache.placeId, Number(placeId)), eq(schema.places.accountId, accountId)))
     .get();
-  const photo = cache?.photos?.[Number(index)];
+  // Only the first photo is shown anywhere, so only it may cost a Google call.
+  const photo = Number(index) === 0 ? cache?.photos?.[0] : undefined;
   if (!photo || !googleConfigured()) return new Response("Not found", { status: 404 });
 
   try {

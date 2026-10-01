@@ -37,7 +37,8 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
   const categories = getCategories(accountId);
   const category = categories.find((c) => c.slug === place.category);
   const g = place.google;
-  const photos = g?.photos ?? [];
+  // Only Google's first photo: each extra one is a paid call.
+  const photos = (g?.photos ?? []).slice(0, 1);
   const hours = weekRows(g?.openingHours ?? null, g?.utcOffsetMinutes ?? null);
   const openNow = isOpenAt(g?.openingHours ?? null, placeLocalNow(g?.utcOffsetMinutes ?? null).minuteOfWeek);
 

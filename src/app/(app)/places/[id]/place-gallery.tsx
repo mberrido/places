@@ -29,11 +29,12 @@ export function PlaceGallery({ placeId, photos }: { placeId: number; photos: Pho
               className="size-full select-none object-cover"
             />
           )}
+          {(photos.length > 1 || p.attributions[0]) && (
           <figcaption className="absolute bottom-3 right-3 rounded-full bg-ink/70 px-2.5 py-1 text-xs text-on-ink">
-            {i + 1} of {photos.length}
+            {photos.length > 1 && `${i + 1} of ${photos.length}`}
             {p.attributions[0] && (
               <>
-                {" · "}
+                {photos.length > 1 && " · "}
                 {p.attributions[0].uri ? (
                   <a href={p.attributions[0].uri} target="_blank" rel="noreferrer" className="underline">
                     {p.attributions[0].displayName}
@@ -44,6 +45,7 @@ export function PlaceGallery({ placeId, photos }: { placeId: number; photos: Pho
               </>
             )}
           </figcaption>
+          )}
         </figure>
       ))}
     </div>
