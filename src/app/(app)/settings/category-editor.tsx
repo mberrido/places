@@ -110,7 +110,7 @@ function CategoryForm({
           onClick={() =>
             run(() => (initial ? updateCategory(initial.slug, { label, emoji, color }) : addCategory({ label, emoji, color })))
           }
-          className="flex-1 rounded-xl bg-accent py-2 font-semibold text-on-accent disabled:opacity-60"
+          className="flex-1 rounded-full bg-accent py-2 font-semibold text-on-accent disabled:opacity-60"
         >
           Save
         </button>

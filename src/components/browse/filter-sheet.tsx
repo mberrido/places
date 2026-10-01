@@ -235,7 +235,7 @@ export function FilterSheet({
         </div>
 
         <div className="border-t border-border px-4 pt-3" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}>
-          <button onClick={onClose} className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent">
+          <button onClick={onClose} className="w-full rounded-full bg-accent py-3 font-semibold text-on-accent">
             Show {resultCount} {resultCount === 1 ? "place" : "places"}
           </button>
         </div>

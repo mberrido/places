@@ -88,7 +88,7 @@ export function SharePlace({
                   }
                 })
               }
-              className="flex-1 rounded-xl bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-50"
+              className="flex-1 rounded-full bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-50"
             >
               {pending ? "Sending…" : "Send"}
             </button>

@@ -46,7 +46,7 @@ export function AddPlace({
 
   return (
     <main>
-      <header className="flex items-center gap-2 pb-3 pt-2">
+      <header className="flex items-center gap-2 pb-4 pt-6">
         {preview && (
           <button
             onClick={() => setPreview(null)}
@@ -56,7 +56,7 @@ export function AddPlace({
             <Icon name="back" className="size-6" />
           </button>
         )}
-        <h1 className="text-3xl font-bold tracking-tight">Add a place</h1>
+        <h1 className="font-display text-[44px] leading-none">Add a place</h1>
       </header>
 
       {!preview && (
@@ -131,7 +131,7 @@ export function AddPlace({
       ) : (
         <>
           {!googleEnabled && (
-            <p className="mb-4 rounded-xl bg-accent-soft p-3 text-sm">
+            <p className="mb-4 rounded-full bg-accent-soft p-3 text-sm">
               Google search isn&apos;t set up (no <code>GOOGLE_PLACES_API_KEY</code>), so places are added manually for
               now.
             </p>
@@ -237,7 +237,7 @@ function SearchGoogle({
         {loc ? "Showing results near you" : (locationMessage(locState) ?? "Prefer results near me")}
       </button>
 
-      {notice && <p className="mt-3 rounded-xl bg-accent-soft p-3 text-sm">{notice}</p>}
+      {notice && <p className="mt-3 rounded-full bg-accent-soft p-3 text-sm">{notice}</p>}
 
       <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface empty:hidden">
         {visible.map((s) => (
@@ -350,7 +350,7 @@ function PlaceForm({
       {existingId && (
         <Link
           href={`/places/${existingId}`}
-          className="flex items-center justify-between rounded-xl bg-accent-soft p-3 text-sm font-medium text-accent"
+          className="flex items-center justify-between rounded-full bg-accent-soft p-3 text-sm font-medium text-accent"
         >
           Already saved. Open it
           <Icon name="back" className="size-4 rotate-180" />
@@ -473,7 +473,7 @@ function PlaceForm({
 
       <button
         disabled={pending || !!existingId}
-        className="sticky bottom-24 rounded-xl bg-accent py-3 font-semibold text-on-accent shadow-lg disabled:opacity-60"
+        className="sticky bottom-24 rounded-full bg-accent py-3 font-semibold text-on-accent shadow-lg disabled:opacity-60"
       >
         {pending ? "Saving…" : "Save place"}
       </button>

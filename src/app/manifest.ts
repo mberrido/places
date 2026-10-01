@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     background_color: "#f6f4f0",
-    theme_color: "#c2410c",
+    theme_color: "#2f4a36",
     // Android share sheet → /share (iOS doesn't support this; it uses the Shortcut).
     share_target: { action: "/share", method: "GET", params: { title: "title", text: "text", url: "url" } },
     icons: [

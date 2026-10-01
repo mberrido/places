@@ -34,7 +34,7 @@ export function ShareDecision({
       {existingId ? (
         <Link
           href={`/places/${existingId}`}
-          className="rounded-xl bg-accent-soft p-3 text-sm font-medium text-accent"
+          className="rounded-full bg-accent-soft p-3 text-sm font-medium text-accent"
         >
           It&apos;s already in your list. Open it
         </Link>
@@ -67,7 +67,7 @@ export function ShareDecision({
           <button
             disabled={pending}
             onClick={() => run(() => saveSharedPlace(id, category))}
-            className="flex-1 rounded-xl bg-accent py-3 font-semibold text-on-accent disabled:opacity-60"
+            className="flex-1 rounded-full bg-accent py-3 font-semibold text-on-accent disabled:opacity-60"
           >
             {pending ? "Saving…" : "Save to our list"}
           </button>

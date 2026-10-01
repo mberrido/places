@@ -1,32 +1,39 @@
 @import "tailwindcss";
 
+/* "Guidebook · Warm": warm paper, ink, a forest-green accent, serif headings. */
 :root {
-  --bg: #f6f4f0;
-  --surface: #ffffff;
-  --surface-2: #efece6;
-  --border: #e2ddd4;
-  --text: #1c1917;
-  --muted: #78716c;
-  --accent: #c2410c;
-  --accent-soft: #fbe7dc;
-  --on-accent: #ffffff;
-  --danger: #b91c1c;
-  --star: #d97706;
+  --bg: #f6f1e7;
+  --surface: #fffdf8;
+  --surface-2: #ece4d4;
+  --border: #d9cfbd;
+  --text: #2a2118;
+  --muted: #6f6150;
+  --accent: #2f4a36;
+  --accent-soft: #e2e6d9;
+  --on-accent: #f6f1e7;
+  --ink: #2a2118;
+  --on-ink: #f6f1e7;
+  --on-ink-muted: #bfb3a0;
+  --danger: #a3311f;
+  --star: #b5761a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121110;
-    --surface: #1c1a18;
-    --surface-2: #262320;
-    --border: #34302c;
-    --text: #f5f3ef;
-    --muted: #a39e98;
-    --accent: #fb7d45;
-    --accent-soft: #3a2418;
-    --on-accent: #1c1917;
-    --danger: #f87171;
-    --star: #fbbf24;
+    --bg: #1a1612;
+    --surface: #241f19;
+    --surface-2: #2e2820;
+    --border: #3e3529;
+    --text: #f2ebdd;
+    --muted: #b2a58f;
+    --accent: #9cc0a4;
+    --accent-soft: #263228;
+    --on-accent: #14110d;
+    --ink: #0f0d0a;
+    --on-ink: #f2ebdd;
+    --on-ink-muted: #a89c88;
+    --danger: #f08b77;
+    --star: #f0b860;
   }
 }
 
@@ -40,9 +47,13 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-muted: var(--on-ink-muted);
   --color-danger: var(--danger);
   --color-star: var(--star);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -68,4 +79,13 @@ textarea {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* Small caps eyebrow above serif headings. */
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
 }

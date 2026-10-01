@@ -95,7 +95,7 @@ export function NotesAndTags({
     return (
       <section className="text-sm">
         <div className="mb-1 flex items-center justify-between">
-          <h2 className="font-semibold">Notes &amp; tags</h2>
+          <h2 className="font-display text-[22px] italic">Notes &amp; tags</h2>
           <button onClick={() => setEditing(true)} className="inline-flex items-center gap-1 text-accent">
             <Icon name="edit" className="size-3.5" /> Edit
           </button>
@@ -120,7 +120,7 @@ export function NotesAndTags({
 
   return (
     <section className="flex flex-col gap-3 text-sm">
-      <h2 className="font-semibold">Notes &amp; tags</h2>
+      <h2 className="font-display text-[22px] italic">Notes &amp; tags</h2>
       <TagInput value={draftTags} onChange={setDraftTags} suggestions={suggestions} />
       <textarea
         value={draftNotes}
@@ -148,7 +148,7 @@ export function NotesAndTags({
               setEditing(false);
             })
           }
-          className="flex-1 rounded-xl bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-60"
+          className="flex-1 rounded-full bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save"}
         </button>
@@ -200,7 +200,7 @@ export function EditDetails({
             </option>
           ))}
         </select>
-        <button disabled={pending} className="rounded-xl bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-60">
+        <button disabled={pending} className="rounded-full bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-60">
           {pending ? "Saving…" : "Save changes"}
         </button>
       </form>

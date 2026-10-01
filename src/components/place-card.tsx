@@ -1,31 +1,41 @@
 import Link from "next/link";
 import type { Category } from "@/db/schema";
 import { formatKm, type Filtered } from "@/lib/filters";
-import { Icon } from "./icons";
-import { CategoryChip, GoogleRating, OurRating, PriceLevel } from "./place-bits";
+import { OurRating } from "./place-bits";
 
+/** A place in the list: rounded photo, serif name, place and a short accent line. */
 export function PlaceCard({
   place,
   category,
   stay,
+  framed = false,
   className = "",
 }: {
   place: Filtered;
   category: Category | undefined;
   /** Dates from the "when" filter, passed on to a hotel's booking links. */
   stay?: { checkin: string; checkout: string } | null;
+  /** On a card background (e.g. floating over the map) rather than straight on the page. */
+  framed?: boolean;
   className?: string;
 }) {
   const href =
     stay && place.category === "hotel"
       ? `/places/${place.id}?checkin=${stay.checkin}&checkout=${stay.checkout}`
       : `/places/${place.id}`;
+  const facts = [
+    place.rating != null ? `★ ${place.rating.toFixed(1)}` : null,
+    place.priceLevel ? "£".repeat(place.priceLevel) : null,
+    place.distanceKm != null ? `${formatKm(place.distanceKm)} away` : null,
+  ].filter(Boolean);
   return (
     <Link
       href={href}
-      className={`flex gap-3 rounded-2xl border border-border bg-surface p-2.5 active:bg-surface-2 ${className}`}
+      className={`flex items-center gap-3.5 py-2.5 active:opacity-70 ${
+        framed ? "rounded-2xl bg-surface px-2.5" : ""
+      } ${className}`}
     >
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2">
+      <div className="relative size-[84px] shrink-0 overflow-hidden rounded-2xl bg-surface-2">
         {place.hasPhoto ? (
           // Plain <img>: the photo proxy already sizes and caches images.
           // eslint-disable-next-line @next/next/no-img-element
@@ -36,36 +46,20 @@ export function PlaceCard({
           </span>
         )}
       </div>
-      <div className="min-w-0 flex-1 py-0.5">
-        <div className="flex items-baseline gap-2">
-          <h2 className="min-w-0 flex-1 truncate font-semibold leading-tight">{place.name}</h2>
-          {place.distanceKm != null && (
-            <span className="shrink-0 text-xs font-medium text-muted tabular-nums">{formatKm(place.distanceKm)}</span>
-          )}
-        </div>
-        <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-muted">
-          <Icon name="pin" className="size-3.5 shrink-0" />
-          <span className="truncate">{[place.city, place.country].filter(Boolean).join(", ") || "No location"}</span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h2 className="truncate font-display text-2xl leading-[1.05]">{place.name}</h2>
+        <p className="truncate text-sm text-muted">
+          {[place.city, place.country].filter(Boolean).join(", ") || category?.label || "No location"}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <CategoryChip category={category} />
-          <GoogleRating rating={place.rating} />
-          <PriceLevel level={place.priceLevel} />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          {facts.length > 0 && <span className="font-medium text-accent">{facts.join(" · ")}</span>}
           {place.status === "been" && <OurRating value={place.ourRating} />}
-          {place.hours && "unknown" in place.hours && (
-            <span className="rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted">
-              Hours unknown
-            </span>
-          )}
+          {place.hours && "unknown" in place.hours && <span className="text-xs text-muted">· hours unknown</span>}
           {place.hours && "openOn" in place.hours && (
-            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium">
-              {place.hours.openOn.join(" & ")} only
-            </span>
+            <span className="text-xs text-muted">· {place.hours.openOn.join(" & ")} only</span>
           )}
           {place.hours && "closedOn" in place.hours && (
-            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium">
-              Closed {place.hours.closedOn.join(" & ")}
-            </span>
+            <span className="text-xs text-muted">· closed {place.hours.closedOn.join(" & ")}</span>
           )}
         </div>
       </div>

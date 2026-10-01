@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         className="mx-auto max-w-2xl px-4"
         style={{
           paddingTop: "max(env(safe-area-inset-top), 12px)",
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 112px)",
         }}
       >
         {children}

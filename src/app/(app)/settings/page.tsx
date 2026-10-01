@@ -37,8 +37,8 @@ export default async function SettingsPage() {
 
   return (
     <main className="flex flex-col gap-6">
-      <header className="pb-1 pt-2">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+      <header className="pb-1 pt-6">
+        <h1 className="font-display text-[44px] leading-none">Settings</h1>
       </header>
 
       <section>
@@ -76,7 +76,7 @@ export default async function SettingsPage() {
             Google API usage (all households)
           </h2>
           {!googleConfigured() && (
-            <p className="mb-2 rounded-xl bg-accent-soft p-3 text-sm">
+            <p className="mb-2 rounded-full bg-accent-soft p-3 text-sm">
               <code>GOOGLE_PLACES_API_KEY</code> isn&apos;t set, so Google search and enrichment are off.
             </p>
           )}

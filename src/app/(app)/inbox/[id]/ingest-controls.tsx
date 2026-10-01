@@ -82,7 +82,7 @@ export function CaptionForm({ id }: { id: number }) {
             }
           })
         }
-        className="rounded-xl bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-50"
+        className="rounded-full bg-accent py-2.5 font-semibold text-on-accent disabled:opacity-50"
       >
         {pending ? "Sending…" : "Find places in this caption"}
       </button>
@@ -256,7 +256,7 @@ export function ConfirmForm({
             }
           })
         }
-        className="sticky bottom-24 rounded-xl bg-accent py-3 font-semibold text-on-accent shadow-lg disabled:opacity-50"
+        className="sticky bottom-24 rounded-full bg-accent py-3 font-semibold text-on-accent shadow-lg disabled:opacity-50"
       >
         {pending ? "Saving…" : count === 1 ? "Save place" : `Save ${count} places`}
       </button>

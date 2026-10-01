@@ -17,8 +17,8 @@ export default async function InboxPage() {
   const shares = pendingShares(accountId);
   return (
     <main className="flex flex-col gap-4">
-      <header className="pb-1 pt-2">
-        <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
+      <header className="pb-1 pt-6">
+        <h1 className="font-display text-[44px] leading-none">Inbox</h1>
         <p className="mt-1 text-sm text-muted">Instagram posts to turn into places, and places shared with you.</p>
       </header>
 
@@ -33,7 +33,7 @@ export default async function InboxPage() {
                 href={`/inbox/shared/${s.id}`}
                 className="flex items-center gap-3 rounded-2xl border border-accent bg-surface p-3 active:bg-surface-2"
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-on-accent">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-on-accent">
                   <Icon name="share" className="size-5" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ export default async function InboxPage() {
                   href={`/inbox/${i.id}`}
                   className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 active:bg-surface-2"
                 >
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
                     <Icon name="camera" className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">

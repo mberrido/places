@@ -16,7 +16,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
       <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-accent text-white">
         <Icon name="pin" className="size-7" />
       </span>
-      <h1 className="text-3xl font-bold tracking-tight">Places</h1>
+      <h1 className="font-display text-[44px] leading-none">Places</h1>
       <p className="mt-1 text-muted">Somewhere we want to go.</p>
       <LoginForm next={typeof next === "string" ? next : "/"} />
     </main>

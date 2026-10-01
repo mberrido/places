@@ -40,7 +40,7 @@ export default async function IngestPage(props: PageProps<"/inbox/[id]">) {
         <Link href="/inbox" aria-label="Back to inbox" className="-ml-2 grid size-9 place-items-center rounded-full active:bg-surface-2">
           <Icon name="back" className="size-6" />
         </Link>
-        <h1 className="flex-1 text-2xl font-bold tracking-tight">From Instagram</h1>
+        <h1 className="flex-1 font-display text-[34px] leading-none">From Instagram</h1>
         <StatusBadge ingest={ingest} />
       </header>
 
@@ -88,7 +88,7 @@ export default async function IngestPage(props: PageProps<"/inbox/[id]">) {
 
       {ingest.status === "needs_text" && (
         <section className="flex flex-col gap-3">
-          <p className="rounded-xl bg-accent-soft p-3 text-sm">{ingest.error}</p>
+          <p className="rounded-full bg-accent-soft p-3 text-sm">{ingest.error}</p>
           <ScreenshotButton ingestId={ingest.id} />
           <CaptionForm id={ingest.id} />
         </section>
@@ -114,7 +114,7 @@ export default async function IngestPage(props: PageProps<"/inbox/[id]">) {
           />
         ) : (
           <section className="flex flex-col gap-3">
-            <p className="rounded-xl bg-accent-soft p-3 text-sm">
+            <p className="rounded-full bg-accent-soft p-3 text-sm">
               Claude couldn&apos;t find a specific named place in this {profile ? "profile" : "post"}. If you know it, search for it directly, or
               paste more of the caption.
             </p>
@@ -131,7 +131,7 @@ export default async function IngestPage(props: PageProps<"/inbox/[id]">) {
           {saved.length > 0 ? (
             <p className="text-sm text-muted">Saved:</p>
           ) : (
-            <p className="rounded-xl bg-accent-soft p-3 text-sm">
+            <p className="rounded-full bg-accent-soft p-3 text-sm">
               {ingest.savedPlaceIds?.length === 1
                 ? "The place saved from this has since been deleted."
                 : "The places saved from this have since been deleted."}

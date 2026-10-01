@@ -9,6 +9,7 @@ import {
   activeCount,
   applyFilters,
   DEFAULT_FILTERS,
+  effectiveSort,
   parseFilters,
   serialiseFilters,
   type Filters,
@@ -28,14 +29,35 @@ const PlacesMap = dynamic(() => import("../map/places-map"), {
 
 const STATUS_TABS = ["want", "been", "all"] as const;
 
+const HEADINGS: Record<Filters["status"], string> = {
+  want: "Places to go",
+  been: "Places we've been",
+  not_interested: "Not for us",
+  all: "All our places",
+};
+
+/** Section headings for the default categories; custom ones use their label. */
+const GROUP_TITLES: Record<string, string> = {
+  hotel: "Somewhere to stay",
+  restaurant: "Something to eat",
+  cafe: "Coffee & cake",
+  bar: "A drink",
+  attraction: "Things to see",
+  "day-out": "Days out",
+  shop: "Shops",
+  other: "Everything else",
+};
+
 export function PlacesBrowser({
   places,
   categories,
   tags,
+  accountName,
 }: {
   places: PlaceSummary[];
   categories: Category[];
   tags: string[];
+  accountName: string;
 }) {
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -85,6 +107,19 @@ export function PlacesBrowser({
   const count = activeCount(filters);
   const fitKey = serialiseFilters({ ...filters, view: "list", sort: null });
   const selected = result.places.find((p) => p.id === selectedId) ?? null;
+
+  // Sorted by most recent: group under friendly category headings, in the
+  // household's category order. Sorted by distance or rating: one flat list.
+  const groups =
+    effectiveSort(filters) === "recent"
+      ? categories
+          .map((c) => ({
+            key: c.slug,
+            title: GROUP_TITLES[c.slug] ?? c.label,
+            places: result.places.filter((p) => p.category === c.slug),
+          }))
+          .filter((g) => g.places.length)
+      : [{ key: "all", title: null, places: result.places }];
   const when = filters.when ? resolveWhen(filters.when) : null;
   const stay = when ? { checkin: when.checkin, checkout: when.checkout } : null;
 
@@ -120,27 +155,22 @@ export function PlacesBrowser({
 
   return (
     <main>
-      <header className="flex items-center justify-between gap-3 pb-3 pt-2">
-        <h1 className="text-3xl font-bold tracking-tight">Places</h1>
-        <div className="flex rounded-full bg-surface-2 p-0.5 text-sm font-medium" role="group" aria-label="View">
-          {(["list", "map"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => update({ view: v })}
-              aria-pressed={filters.view === v}
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
-                filters.view === v ? "bg-surface shadow-sm" : "text-muted"
-              }`}
-            >
-              <Icon name={v === "list" ? "list" : "map"} className="size-4" />
-              {v === "list" ? "List" : "Map"}
-            </button>
-          ))}
+      <header className="flex items-end justify-between gap-3 pb-4 pt-6">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span className="eyebrow truncate">{accountName}&apos;s list</span>
+          <h1 className="font-display text-[50px] leading-none">{HEADINGS[filters.status]}</h1>
         </div>
+        <button
+          onClick={() => update({ view: filters.view === "map" ? "list" : "map" })}
+          aria-label={filters.view === "map" ? "Show list" : "Show map"}
+          className="grid size-11 shrink-0 place-items-center rounded-full border border-border"
+        >
+          <Icon name={filters.view === "map" ? "list" : "map"} className="size-[19px]" />
+        </button>
       </header>
 
       <div className="flex gap-2">
-        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3 focus-within:border-accent">
+        <label className="flex h-[46px] min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface-2 px-4 focus-within:ring-2 focus-within:ring-accent/40">
           <Icon name="search" className="size-4 shrink-0 text-muted" />
           <input
             type="search"
@@ -155,7 +185,7 @@ export function PlacesBrowser({
             }}
             placeholder="Search, or ask: hotel near me this weekend"
             enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent py-2.5 outline-none"
+            className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted"
           />
           {filters.q.trim().length >= 3 && (
             <button
@@ -163,30 +193,18 @@ export function PlacesBrowser({
               onClick={ask}
               disabled={asking}
               title="Turn this into filters"
-              className="-mr-1 inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent-soft px-2 py-1 text-xs font-semibold text-accent disabled:opacity-60"
+              className="-mr-1.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent disabled:opacity-60"
             >
               <Icon name="sparkles" className={`size-3.5 ${asking ? "animate-pulse" : ""}`} />
               {asking ? "Thinking…" : "Ask"}
             </button>
           )}
         </label>
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="relative inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-sm font-medium"
-        >
-          <Icon name="settings" className="size-4" />
-          Filters
-          {count > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-accent text-[11px] font-bold text-on-accent">
-              {count}
-            </span>
-          )}
-        </button>
       </div>
 
       {asked && (
         <div
-          className={`mt-2 flex items-start gap-2 rounded-xl px-3 py-2 text-sm ${
+          className={`mt-2 flex items-start gap-2 rounded-2xl px-4 py-2.5 text-sm ${
             asked.error ? "bg-danger/10 text-danger" : "bg-accent-soft"
           }`}
         >
@@ -209,20 +227,33 @@ export function PlacesBrowser({
         </div>
       )}
 
-      <div role="tablist" className="mt-2 flex gap-1 rounded-xl bg-surface-2 p-1">
-        {STATUS_TABS.map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={t === filters.status}
-            onClick={() => update({ status: t })}
-            className={`flex-1 rounded-lg py-1.5 text-center text-sm font-medium ${
-              t === filters.status ? "bg-surface shadow-sm" : "text-muted"
-            }`}
-          >
-            {t === "all" ? "All" : STATUS_LABELS[t]}
-          </button>
-        ))}
+      <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
+        <div role="tablist" aria-label="Status" className="flex gap-2">
+          {STATUS_TABS.map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={t === filters.status}
+              onClick={() => update({ status: t })}
+              className={`h-[34px] shrink-0 rounded-full px-3.5 text-sm ${
+                t === filters.status ? "bg-text font-medium text-bg" : "border border-border"
+              }`}
+            >
+              {t === "all" ? "All" : STATUS_LABELS[t]}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setSheetOpen(true)}
+          className="inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm"
+        >
+          Filters
+          {count > 0 && (
+            <span className="grid size-5 place-items-center rounded-full bg-accent text-[11px] font-bold text-on-accent">
+              {count}
+            </span>
+          )}
+        </button>
       </div>
 
       {chips.length > 0 && (
@@ -277,6 +308,7 @@ export function PlacesBrowser({
                 place={selected}
                 category={categoryMap.get(selected.category)}
                 stay={stay}
+                framed
                 className="shadow-lg"
               />
             </div>
@@ -302,13 +334,25 @@ export function PlacesBrowser({
           }
         />
       ) : (
-        <ul className="mt-2 flex flex-col gap-2">
-          {result.places.map((p) => (
-            <li key={p.id}>
-              <PlaceCard place={p} category={categoryMap.get(p.category)} stay={stay} />
-            </li>
+        <div className="mt-1 flex flex-col">
+          {groups.map((g) => (
+            <section key={g.key}>
+              {g.title && (
+                <div className="flex items-center gap-3 pb-1 pt-5">
+                  <h2 className="font-display text-[26px] italic">{g.title}</h2>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+              )}
+              <ul className="flex flex-col">
+                {g.places.map((p) => (
+                  <li key={p.id}>
+                    <PlaceCard place={p} category={categoryMap.get(p.category)} stay={stay} />
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
 
       {sheetOpen && (
@@ -354,7 +398,7 @@ function Empty({ title, body, action }: { title: string; body: string; action: R
       <span className="grid size-14 place-items-center rounded-full bg-accent-soft text-accent">
         <Icon name="pin" className="size-7" />
       </span>
-      <p className="mt-3 font-medium">{title}</p>
+      <p className="mt-3 font-display text-3xl">{title}</p>
       <p className="mt-1 text-sm text-muted">{body}</p>
       <div className="mt-4">{action}</div>
     </div>

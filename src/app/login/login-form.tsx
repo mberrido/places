@@ -81,7 +81,7 @@ export function LoginForm({ next }: { next: string }) {
           {state.error}
         </p>
       )}
-      <button disabled={pending} className="rounded-xl bg-accent py-3 font-semibold text-on-accent disabled:opacity-60">
+      <button disabled={pending} className="rounded-full bg-accent py-3 font-semibold text-on-accent disabled:opacity-60">
         {pending ? "Logging in…" : "Log in"}
       </button>
     </form>

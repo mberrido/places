@@ -113,7 +113,7 @@ export default function PinPicker({
         <button
           disabled={!center}
           onClick={() => center && onPick(center)}
-          className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent disabled:opacity-60"
+          className="w-full rounded-full bg-accent py-3 font-semibold text-on-accent disabled:opacity-60"
         >
           Use this spot
         </button>

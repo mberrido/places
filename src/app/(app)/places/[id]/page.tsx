@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { Icon, type IconName } from "@/components/icons";
-import { CategoryChip, GoogleRating, PriceLevel } from "@/components/place-bits";
 import { isOpenAt, placeLocalNow, weekRows } from "@/lib/hours";
 import { allTags, daysSince, getCategories, getPlace, isStale, refreshPlace } from "@/lib/places";
 import { googleConfigured } from "@/lib/google";
@@ -71,9 +70,9 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
 
   return (
     <main className="-mx-4">
-      <div className="relative">
+      <div className="relative mx-4 mt-2 overflow-hidden rounded-[22px] bg-surface-2">
         {photos.length > 0 ? (
-          <div className="scrollbar-none flex aspect-[4/3] snap-x snap-mandatory overflow-x-auto sm:rounded-b-2xl">
+          <div className="scrollbar-none flex aspect-[4/3.4] snap-x snap-mandatory overflow-x-auto">
             {photos.map((p, i) => (
               <figure key={p.name} className="relative h-full w-full shrink-0 snap-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,8 +82,8 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
                   loading={i === 0 ? "eager" : "lazy"}
                   className="size-full object-cover"
                 />
-                <figcaption className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] text-white">
-                  {i + 1}/{photos.length}
+                <figcaption className="absolute bottom-3 right-3 rounded-full bg-ink/70 px-2.5 py-1 text-xs text-on-ink">
+                  {i + 1} of {photos.length}
                   {p.attributions[0] && (
                     <>
                       {" · "}
@@ -102,37 +101,34 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
             ))}
           </div>
         ) : (
-          <div className="grid h-40 place-items-center bg-surface-2 text-6xl" aria-hidden>
+          <div className="grid h-52 place-items-center text-6xl" aria-hidden>
             {category?.emoji ?? "📍"}
           </div>
         )}
         <Link
           href="/"
           aria-label="Back"
-          className="absolute left-3 grid size-9 place-items-center rounded-full bg-black/45 text-white backdrop-blur"
-          style={{ top: "max(env(safe-area-inset-top), 12px)" }}
+          className="absolute left-3 top-3 grid size-11 place-items-center rounded-full bg-bg text-text"
         >
-          <Icon name="back" className="size-5" />
+          <Icon name="back" className="size-[19px]" />
         </Link>
       </div>
 
       <div className="flex flex-col gap-5 px-4 pt-4">
-        <section>
-          <div className="flex items-center gap-2">
-            <CategoryChip category={category} />
-            {openNow != null && (
-              <span className={`text-xs font-medium ${openNow ? "text-green-600 dark:text-green-400" : "text-muted"}`}>
-                {openNow ? "Open now" : "Closed now"}
+        <section className="flex flex-col gap-1.5 px-2">
+          <span className="eyebrow">
+            {[category?.label, place.city].filter(Boolean).join(" · ")}
+            {openNow != null && <span className="text-muted"> · {openNow ? "open now" : "closed now"}</span>}
+          </span>
+          <h1 className="font-display text-[52px] leading-[0.95]">{place.name}</h1>
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted">
+            {g?.rating != null && (
+              <span>
+                ★ {g.rating.toFixed(1)} on Google
+                {g.userRatingCount != null && ` · ${g.userRatingCount.toLocaleString("en-GB")} reviews`}
               </span>
             )}
-          </div>
-          <h1 className="mt-1.5 text-2xl font-bold leading-tight tracking-tight">{place.name}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <GoogleRating rating={g?.rating} count={g?.userRatingCount} />
-            <PriceLevel level={g?.priceLevel} />
-            {(place.city || place.country) && (
-              <span className="text-sm text-muted">{[place.city, place.country].filter(Boolean).join(", ")}</span>
-            )}
+            {g?.priceLevel ? <span>· {"£".repeat(g.priceLevel)}</span> : null}
           </div>
         </section>
 
@@ -150,9 +146,9 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
               href={l.href}
               target={l.href.startsWith("tel:") ? undefined : "_blank"}
               rel="noreferrer"
-              className="flex min-w-[76px] shrink-0 flex-col items-center gap-1 rounded-2xl border border-border bg-surface px-3 py-2.5 text-xs font-medium active:bg-surface-2"
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm active:bg-surface-2"
             >
-              <Icon name={l.icon} className="size-5 text-accent" />
+              <Icon name={l.icon} className="size-4 text-accent" />
               {l.label}
             </a>
           ))}
@@ -170,17 +166,15 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
 
         {place.address && (
           <section className="text-sm">
-            <h2 className="mb-1 font-semibold">Address</h2>
+            <h2 className="mb-1 font-display text-[22px] italic">Address</h2>
             <p className="text-muted">{place.address}</p>
           </section>
         )}
 
         {hours.length > 0 ? (
           <section className="text-sm">
-            <h2 className="mb-1.5 flex items-center gap-1.5 font-semibold">
-              <Icon name="clock" className="size-4" /> Opening hours
-            </h2>
-            <dl className="overflow-hidden rounded-xl border border-border bg-surface">
+            <h2 className="mb-1.5 font-display text-[22px] italic">Opening hours</h2>
+            <dl className="overflow-hidden rounded-2xl bg-surface">
               {hours.map((h) => (
                 <div
                   key={h.day}
@@ -207,7 +201,7 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
 
         {place.sourceCaption && (
           <section className="text-sm">
-            <h2 className="mb-1 font-semibold">Original caption</h2>
+            <h2 className="mb-1 font-display text-[22px] italic">Original caption</h2>
             <p className="whitespace-pre-line text-muted">{place.sourceCaption}</p>
           </section>
         )}

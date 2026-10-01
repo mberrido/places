@@ -85,7 +85,7 @@ export function NearMe({ onPick }: { onPick: (googlePlaceId: string) => Promise<
         </button>
       </div>
 
-      {error && <p className="mt-3 rounded-xl bg-accent-soft p-3 text-sm">{error}</p>}
+      {error && <p className="mt-3 rounded-full bg-accent-soft p-3 text-sm">{error}</p>}
       {loading && <p className="mt-6 text-center text-sm text-muted">Looking around…</p>}
       {!loading && data?.results.length === 0 && (
         <p className="mt-6 text-center text-sm text-muted">Nothing found here. Try looking wider.</p>

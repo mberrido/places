@@ -22,7 +22,7 @@ export default async function SharedPlacePage(props: PageProps<"/inbox/shared/[i
         <Link href="/inbox" aria-label="Back to inbox" className="-ml-2 grid size-9 place-items-center rounded-full active:bg-surface-2">
           <Icon name="back" className="size-6" />
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Shared with you</h1>
+        <h1 className="font-display text-[34px] leading-none">Shared with you</h1>
       </header>
 
       <p className="text-sm text-muted">
