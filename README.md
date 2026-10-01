@@ -362,8 +362,7 @@ places a night) and clears inbox items that got stuck mid-processing.
 
 ## iOS Shortcut
 
-The Shortcut adds **Save to Places** to the share sheet in Instagram (and
-Photos, for screenshots). It POSTs to `/api/ingest` with the household token and
+The Shortcut adds **Save to Places** to the share sheet in Instagram and Safari. It POSTs to `/api/ingest` with the household token and
 returns straight away; the post is read in the background and waits in the
 **Inbox** for you to confirm.
 
@@ -374,34 +373,19 @@ The endpoint must be reachable from the phone: the public
 `https://places.<name>.synology.me/api/ingest` once deployed, or
 `http://<mac-ip>:3003/api/ingest` on home Wi-Fi while testing.
 
-Build it once in the **Shortcuts** app, then share it to your wife's phone with
-Share → Copy iCloud Link (edit the `by` value after she imports it):
+The step-by-step setup is in the app under **Settings → Share to Places**,
+next to the address and token it needs. In short:
 
-1. **+** to create a shortcut and name it **Save to Places** (pick an icon).
-2. Tap the **ⓘ** at the bottom → turn on **Show in Share Sheet**. Back in the
-   editor, tap the top line (*Receive … from Share Sheet*) and select only
-   **URLs**, **Text** and **Images**. Set *If there's no input* to **Get
-   Clipboard**, so running it from the home screen sends a copied link.
-3. Add **Get Type** (of *Shortcut Input*).
-4. Add **If**: *Type* **is** `Image`.
-   - Inside the If, add **Resize Image**: *Shortcut Input* to width **1600**
-     (optional, but makes uploads quicker).
-   - Add **Get Contents of URL**: the endpoint URL. Expand **Show More**:
-     - Method: **POST**
-     - Headers: `Authorization` = `Bearer <your token>`
-     - Request Body: **Form** with fields `image` (**File**, value *Resized Image*)
-       and `by` (**Text**, value your name).
-5. In the **Otherwise** branch add another **Get Contents of URL**, set up the
-   same way except the form fields are `input` (**Text**, value *Shortcut Input*)
-   and `by` (**Text**, your name).
-6. After **End If**, add **Get Dictionary Value**: *Value* for key `message`
-   in *If Result*.
-7. Add **Show Notification** with *Dictionary Value*.
+1. New shortcut **Save to Places**; **ⓘ** → **Show in Share Sheet**; receive
+   only **URLs** and **Text**.
+2. **Get Contents of URL**: the endpoint, Method **POST**, header
+   `Authorization: Bearer <token>`, Request Body **JSON** with a Text field
+   `input` = *Shortcut Input*.
+3. **Get Dictionary Value** for key `message`, then **Show Notification** with it.
 
-To use it: in Instagram tap the share icon on a post (or **···** on a profile)
-and choose **Save to Places**. If it isn't listed, scroll the share sheet's
-action row to **More** / **Edit Actions** and add it to Favourites. For a post
-that won't share a link, take a screenshot and share that from Photos.
+To use it, share an Instagram post or profile, or any web page from Safari, and
+pick **Save to Places**. Screenshots go through **Add → Link → Upload a
+screenshot** in the app instead.
 
 Responses the notification may show: *Sent to the Places inbox*, *Already in
 the Places inbox*, *Wrong token…* (check the header), or a reason the input was
