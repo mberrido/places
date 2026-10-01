@@ -5,6 +5,7 @@ import { db, schema } from "@/db";
 import { Icon } from "@/components/icons";
 import { failStuckIngests, getIngest } from "@/lib/ingest";
 import { isProfileUrl } from "@/lib/instagram";
+import { ingestSource, isWebUrl } from "@/lib/web-page";
 import { requireSession } from "@/lib/auth";
 import { getCategories, savedGoogleIds } from "@/lib/places";
 import { ScreenshotButton } from "@/components/screenshot-button";
@@ -33,6 +34,7 @@ export default async function IngestPage(props: PageProps<"/inbox/[id]">) {
 
   const working = ingest.status === "pending" || ingest.status === "processing";
   const profile = isProfileUrl(ingest.url);
+  const web = isWebUrl(ingest.url);
 
   return (
     <main className="flex flex-col gap-4">
@@ -40,24 +42,16 @@ export default async function IngestPage(props: PageProps<"/inbox/[id]">) {
         <Link href="/inbox" aria-label="Back to inbox" className="-ml-2 grid size-9 place-items-center rounded-full active:bg-surface-2">
           <Icon name="back" className="size-6" />
         </Link>
-        <h1 className="flex-1 font-display text-[34px] leading-none">From Instagram</h1>
+        <h1 className="flex-1 font-display text-[34px] leading-none">{web ? "From the web" : "From Instagram"}</h1>
         <StatusBadge ingest={ingest} />
       </header>
 
       <section className="rounded-2xl border border-border bg-surface p-3 text-sm">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-semibold">{ingest.account
-              ? `@${ingest.account}`
-              : profile
-                ? "Instagram profile"
-                : ingest.url
-                  ? "Instagram post"
-                  : ingest.via === "screenshot"
-                    ? "Screenshot"
-                    : "Pasted caption"}</span>
+          <span className="min-w-0 truncate font-semibold">{ingestSource(ingest)}</span>
           {ingest.url && (
             <a href={ingest.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent">
-              {profile ? "Open profile" : "Open post"} <Icon name="external" className="size-3.5" />
+              {web ? "Open page" : profile ? "Open profile" : "Open post"} <Icon name="external" className="size-3.5" />
             </a>
           )}
         </div>
@@ -115,8 +109,9 @@ export default async function IngestPage(props: PageProps<"/inbox/[id]">) {
         ) : (
           <section className="flex flex-col gap-3">
             <p className="rounded-full bg-accent-soft p-3 text-sm">
-              Claude couldn&apos;t find a specific named place in this {profile ? "profile" : "post"}. If you know it, search for it directly, or
-              paste more of the caption.
+              {ingest.fetchedWith === "web-failed"
+                ? "That site doesn't let apps read its pages, so Claude only had the link to go on. A screenshot of the page works best, or search for the place directly."
+                : <>Claude couldn&apos;t find a specific named place in this {web ? "page" : profile ? "profile" : "post"}. If you know it, search for it directly, or paste more of the text.</>}
             </p>
             <Link href="/add" className="rounded-xl border border-border bg-surface py-2.5 text-center font-medium">
               Search Google instead

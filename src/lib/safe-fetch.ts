@@ -49,7 +49,7 @@ async function isPublicUrl(url: URL) {
 export async function fetchPublic(
   input: string | URL,
   { maxBytes, timeoutMs = 5000, headers }: { maxBytes: number; timeoutMs?: number; headers?: HeadersInit },
-): Promise<{ url: string; contentType: string; text: string } | null> {
+): Promise<{ url: string; status: number; contentType: string; text: string } | null> {
   const signal = AbortSignal.timeout(timeoutMs);
   let url = new URL(input);
   for (let hop = 0; hop <= 3; hop++) {
@@ -73,7 +73,7 @@ export async function fetchPublic(
     }
     await reader.cancel().catch(() => {});
     const text = Buffer.concat(chunks).subarray(0, maxBytes).toString("utf8");
-    return { url: url.toString(), contentType: res.headers.get("content-type") ?? "", text };
+    return { url: url.toString(), status: res.status, contentType: res.headers.get("content-type") ?? "", text };
   }
   return null;
 }

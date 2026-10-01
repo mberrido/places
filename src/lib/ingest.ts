@@ -10,6 +10,7 @@ import { claudeConfigured, extractPlaces, ExtractionUnavailable, type ExtractInp
 import { GoogleUnavailable, googleConfigured, placeDetails, textSearch } from "./google";
 import { fetchInstagramPost, isProfileUrl, normaliseInstagramUrl } from "./instagram";
 import { findByGoogleId, getCategories, insertPlace } from "./places";
+import { fetchWebPage, isWebUrl, normaliseWebUrl } from "./web-page";
 
 /** A job stuck in "processing" this long was lost (e.g. the server restarted). */
 const STUCK_AFTER_MS = 5 * 60 * 1000;
@@ -62,8 +63,8 @@ export function createIngest(input: {
 export type SubmitResult = { id: number; existing: boolean } | { error: string };
 
 /**
- * Starts an ingest from whatever was pasted or shared: an Instagram link is
- * fetched, anything else long enough is treated as a caption. A link that's
+ * Starts an ingest from whatever was pasted or shared: an Instagram or other
+ * web link is fetched, anything else long enough is treated as a caption. A link that's
  * already waiting in the inbox returns that item instead of a duplicate.
  * The caller kicks off `processIngest` (after the response).
  */
@@ -74,12 +75,9 @@ export function submitIngest(
   addedBy: string | null,
 ): SubmitResult {
   input = input.trim();
-  if (!input) return { error: "Paste an Instagram link or the post's caption." };
+  if (!input) return { error: "Paste a link, or the post's caption." };
 
-  const url = normaliseInstagramUrl(input)?.url ?? null;
-  if (!url && /https?:\/\//.test(input) && input.length < 300) {
-    return { error: "That isn't an Instagram link. Paste a post, reel or profile link, or the caption text." };
-  }
+  const url = normaliseInstagramUrl(input)?.url ?? normaliseWebUrl(input);
   if (!url && input.length < 15) return { error: "That's too short to find a place in." };
 
   if (url) {
@@ -247,7 +245,15 @@ export async function processIngest(id: number, extra: { image?: ExtractInput["i
     const screenshot = loadScreenshot(id);
     let image = extra.image ?? screenshot;
 
-    if (ingest.url && !caption) {
+    const web = isWebUrl(ingest.url);
+    if (ingest.url && web) {
+      // Page text isn't stored, so fetch it every time (a retry needs it too). A caption pasted by hand wins.
+      const page = await fetchWebPage(ingest.url);
+      caption ??= page?.description ?? page?.title ?? null;
+      rawText = page?.text ?? null;
+      fetchedWith = page ? "web" : "web-failed";
+      patch(id, { caption, fetchedWith });
+    } else if (ingest.url && !caption) {
       const post = await fetchInstagramPost(ingest.url);
       if (post) {
         caption = post.caption;
@@ -259,7 +265,8 @@ export async function processIngest(id: number, extra: { image?: ExtractInput["i
       patch(id, { caption, account, fetchedWith });
     }
 
-    if (!caption && !rawText && !image) {
+    // A web page we couldn't fetch still goes to Claude: the address alone often names the place.
+    if (!caption && !rawText && !image && !web) {
       patch(id, {
         status: "needs_text",
         error: "Instagram didn't give us the post's text. Paste the caption or add a screenshot to carry on.",
@@ -275,7 +282,7 @@ export async function processIngest(id: number, extra: { image?: ExtractInput["i
     spendClaudeCall(ingest.accountId);
     const profile = isProfileUrl(ingest.url);
     const extraction = await extractPlaces({
-      kind: profile ? "profile" : "post",
+      kind: web ? "page" : profile ? "profile" : "post",
       screenshot: !!screenshot,
       url: ingest.url,
       account,
@@ -359,7 +366,7 @@ export async function confirmIngest(accountId: number, id: number, picks: Pick[]
           category: pick.category,
           googlePlaceId: pick.googlePlaceId,
           status: "want",
-          source: "instagram",
+          source: isWebUrl(ingest.url) ? "other" : "instagram",
           sourceUrl: ingest.url,
           sourceCaption: ingest.caption,
           city: details ? null : extracted.area,

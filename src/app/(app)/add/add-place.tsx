@@ -35,7 +35,7 @@ export function AddPlace({
   tags: string[];
   googleEnabled: boolean;
   initialQuery?: string;
-  initialTab?: "search" | "nearby" | "instagram";
+  initialTab?: "search" | "nearby" | "link";
   initialLink?: string;
 }) {
   const [tab, setTab] = useState(initialTab);
@@ -65,7 +65,7 @@ export function AddPlace({
             [
               ["search", "Search", "search"],
               ["nearby", "Near me", "locate"],
-              ["instagram", "Instagram", "camera"],
+              ["link", "Link", "globe"],
             ] as const
           ).map(([value, label, icon]) => (
             <button
@@ -101,14 +101,14 @@ export function AddPlace({
           />
           {nearbyError && <p className="mt-2 text-sm text-danger">{nearbyError}</p>}
         </>
-      ) : tab === "instagram" && !preview ? (
+      ) : tab === "link" && !preview ? (
         <>
           <IngestBox initial={initialLink} />
           <ScreenshotButton className="mt-2" />
           <p className="mt-3 text-sm text-muted">
-            In Instagram, tap the share icon on a post (or ··· on a profile), then <strong>Copy link</strong>, and paste
-            it here. Claude reads it and finds the places for you to confirm. If a link doesn&apos;t work, a
-            screenshot of the post does.
+            Paste an Instagram post or profile, a hotel or restaurant&apos;s website, or an article like &ldquo;best
+            pubs in the Cotswolds&rdquo;. Claude reads it and finds the places for you to confirm. If a link
+            doesn&apos;t work, a screenshot does.
           </p>
         </>
       ) : preview ? (

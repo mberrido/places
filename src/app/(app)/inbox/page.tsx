@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { requireSession } from "@/lib/auth";
 import { failStuckIngests, inboxItems } from "@/lib/ingest";
-import { isProfileUrl } from "@/lib/instagram";
+import { ingestSource, isWebUrl } from "@/lib/web-page";
 import { pendingShares } from "@/lib/shares";
 import { StatusBadge } from "./status-badge";
 
@@ -17,7 +17,7 @@ export default async function InboxPage() {
     <main className="flex flex-col gap-4">
       <header className="pb-1 pt-6">
         <h1 className="font-display text-[44px] leading-none">Inbox</h1>
-        <p className="mt-2 text-sm text-muted">Things waiting for you: Instagram posts to confirm, and places shared with you.</p>
+        <p className="mt-2 text-sm text-muted">Things waiting for you: links and Instagram posts to confirm, and places shared with you.</p>
       </header>
 
       {shares.length > 0 && (
@@ -53,13 +53,13 @@ export default async function InboxPage() {
           </span>
           <p className="mt-3 font-display text-3xl">Nothing waiting</p>
           <p className="mt-1 max-w-xs text-sm text-muted">
-            Posts you save from Instagram, and places others share with you, show up here.
+            Links and Instagram posts you add, and places others share with you, show up here.
           </p>
           <Link
-            href="/add?tab=instagram"
+            href="/add?tab=link"
             className="mt-4 rounded-full bg-accent px-5 py-2.5 font-medium text-on-accent"
           >
-            Add from Instagram
+            Add from a link
           </Link>
         </div>
       ) : items.length === 0 ? null : (
@@ -73,20 +73,11 @@ export default async function InboxPage() {
                   className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 active:bg-surface-2"
                 >
                   <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-                    <Icon name="camera" className="size-5" />
+                    <Icon name={isWebUrl(i.url) ? "globe" : "camera"} className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">
-                      {names ||
-                        (i.account
-                          ? `@${i.account}`
-                          : isProfileUrl(i.url)
-                            ? "Instagram profile"
-                            : i.url
-                              ? "Instagram post"
-                              : i.via === "screenshot"
-                                ? "Screenshot"
-                                : "Pasted caption")}
+                      {names || ingestSource(i)}
                     </span>
                     <span className="block truncate text-sm text-muted">
                       {i.summary ?? i.caption ?? i.url ?? ""}

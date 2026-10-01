@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { Icon } from "@/components/icons";
 import { startIngest, type IngestFormState } from "../inbox/actions";
 
-/** Paste an Instagram link (or a caption) to start. */
+/** Paste a link (Instagram or any web page), or a caption, to start. */
 export function IngestBox({ initial = "" }: { initial?: string }) {
   const [state, action, pending] = useActionState<IngestFormState, FormData>(startIngest, {});
   const [value, setValue] = useState(initial);
@@ -17,7 +17,7 @@ export function IngestBox({ initial = "" }: { initial?: string }) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           rows={value.length > 80 ? 5 : 2}
-          placeholder="Paste an Instagram post or profile link, or a caption"
+          placeholder="Paste a link (Instagram, a website, an article) or a caption"
           className="w-full resize-none bg-transparent px-1 py-1 outline-none"
         />
         <div className="flex items-center justify-between gap-2">

@@ -47,7 +47,7 @@ export async function submitCaption(id: number, caption: string) {
   // Only where the inbox offers a caption box: nothing read yet, or nothing found.
   const ingest = getIngest(accountId, id);
   const open = ingest && (ingest.status === "needs_text" || ingest.status === "failed" || (ingest.status === "ready" && !ingest.places?.length));
-  if (!open) throw new Error("This post has already been read");
+  if (!open) throw new Error("This has already been read");
   setIngestCaption(accountId, id, caption);
   after(() => processIngest(id));
   refresh();

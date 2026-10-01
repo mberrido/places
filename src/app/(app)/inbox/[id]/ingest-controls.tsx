@@ -52,7 +52,7 @@ export function DismissButton({ id }: { id: number }) {
       onClick={() => start(() => dismiss(id))}
       className="mt-2 self-center py-2 text-sm text-muted underline-offset-2 hover:underline"
     >
-      Dismiss this post
+      Dismiss
     </button>
   );
 }
@@ -124,7 +124,7 @@ export function ConfirmForm({
 
   return (
     <section className="flex flex-col gap-4">
-      {places.length > 1 && <p className="text-sm text-muted">This post mentions {places.length} places. Tick the ones to save.</p>}
+      {places.length > 1 && <p className="text-sm text-muted">Found {places.length} places. Tick the ones to save.</p>}
 
       {places.map((p, i) => {
         const c = choices[i];

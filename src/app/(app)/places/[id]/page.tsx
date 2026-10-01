@@ -55,7 +55,13 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
     ...(g?.website ? [{ href: g.website, label: "Website", icon: "globe" as const }] : []),
     ...(g?.menuUrl ? [{ href: g.menuUrl, label: "Menu", icon: "menu" as const }] : []),
     ...(g?.phone ? [{ href: `tel:${g.phone.replace(/\s/g, "")}`, label: "Call", icon: "phone" as const }] : []),
-    ...(place.sourceUrl ? [{ href: place.sourceUrl, label: "Instagram", icon: "camera" as const }] : []),
+    ...(place.sourceUrl
+      ? [
+          place.source === "instagram"
+            ? { href: place.sourceUrl, label: "Instagram", icon: "camera" as const }
+            : { href: place.sourceUrl, label: "Source", icon: "globe" as const },
+        ]
+      : []),
   ];
 
   const refreshedDaysAgo = g ? daysSince(g.lastRefreshedAt) : null;

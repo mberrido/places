@@ -53,7 +53,7 @@ export function isProfileUrl(url: string | null | undefined) {
   return !!url && normaliseInstagramUrl(url)?.kind === "profile";
 }
 
-function decodeEntities(s: string) {
+export function decodeEntities(s: string) {
   return s
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
@@ -64,7 +64,7 @@ function decodeEntities(s: string) {
     .replace(/&amp;/g, "&");
 }
 
-function metaTags(html: string) {
+export function metaTags(html: string) {
   const out = new Map<string, string>();
   for (const [tag] of html.matchAll(/<meta\b[^>]*>/gi)) {
     const key = tag.match(/\b(?:property|name)\s*=\s*["']([^"']+)["']/i)?.[1]?.toLowerCase();

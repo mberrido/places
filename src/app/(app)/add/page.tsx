@@ -16,7 +16,7 @@ export default async function AddPage(props: PageProps<"/add">) {
       tags={allTags(accountId)}
       googleEnabled={googleConfigured()}
       initialQuery={typeof sp.q === "string" ? sp.q : ""}
-      initialTab={sp.tab === "instagram" || sp.tab === "nearby" ? sp.tab : "search"}
+      initialTab={sp.tab === "link" || sp.tab === "instagram" ? "link" : sp.tab === "nearby" ? "nearby" : "search"}
       initialLink={typeof sp.url === "string" ? sp.url : ""}
     />
   );
