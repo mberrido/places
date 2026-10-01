@@ -29,7 +29,7 @@ export function StatusControl({
   return (
     <section className={`rounded-2xl border border-border bg-surface p-3 ${pending ? "opacity-70" : ""}`}>
       <div className="flex gap-1 rounded-xl bg-surface-2 p-1">
-        {(["want", "been", "not_interested"] as const).map((s) => (
+        {(["want", "been"] as const).map((s) => (
           <button
             key={s}
             onClick={() => s !== status && save(s === "been" ? { status: s, visitedAt: visitedAt ?? today() } : { status: s })}

@@ -26,7 +26,7 @@ export function HotelBooking({
     <section className="rounded-3xl bg-ink p-4 text-sm text-on-ink">
       <h2 className="mb-2 font-display text-[22px]">Check prices</h2>
       <div className="grid grid-cols-2 gap-2">
-        <label className="text-xs text-on-ink-muted">
+        <label className="min-w-0 text-xs text-on-ink-muted">
           Check in
           <input
             type="date"
@@ -38,17 +38,17 @@ export function HotelBooking({
               setCheckin(v);
               if (checkout <= v) setCheckout(ymd(addDays(parseYmd(v)!, 1)));
             }}
-            className="mt-1 block w-full rounded-xl border border-on-ink-muted/40 bg-transparent px-2 py-2 text-on-ink [color-scheme:dark]"
+            className="mt-1 block w-full min-w-0 appearance-none rounded-xl border border-on-ink-muted/40 bg-transparent px-2 py-2 text-left text-on-ink [color-scheme:dark]"
           />
         </label>
-        <label className="text-xs text-on-ink-muted">
+        <label className="min-w-0 text-xs text-on-ink-muted">
           Check out
           <input
             type="date"
             value={checkout}
             min={ymd(addDays(parseYmd(checkin) ?? new Date(), 1))}
             onChange={(e) => e.target.value && setCheckout(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-on-ink-muted/40 bg-transparent px-2 py-2 text-on-ink [color-scheme:dark]"
+            className="mt-1 block w-full min-w-0 appearance-none rounded-xl border border-on-ink-muted/40 bg-transparent px-2 py-2 text-left text-on-ink [color-scheme:dark]"
           />
         </label>
       </div>

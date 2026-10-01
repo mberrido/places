@@ -192,7 +192,7 @@ export function FilterSheet({
 
           <Section title="Status">
             <div className="flex flex-wrap gap-1.5">
-              {(["want", "been", "not_interested", "all"] as const).map((s) => (
+              {(["want", "been", "all"] as const).map((s) => (
                 <Pill key={s} active={f.status === s} onClick={() => update({ status: s })}>
                   {s === "all" ? "Any" : STATUS_LABELS[s]}
                 </Pill>

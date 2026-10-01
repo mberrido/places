@@ -21,6 +21,7 @@ import { locationMessage, useDeviceLocation } from "@/lib/use-location";
 import { Icon } from "../icons";
 import { PlaceCard } from "../place-card";
 import { FilterSheet } from "./filter-sheet";
+import { SwipeToDelete } from "./swipe-to-delete";
 
 const PlacesMap = dynamic(() => import("../map/places-map"), {
   ssr: false,
@@ -32,7 +33,6 @@ const STATUS_TABS = ["want", "been", "all"] as const;
 const HEADINGS: Record<Filters["status"], string> = {
   want: "Places to go",
   been: "Places we've been",
-  not_interested: "Not for us",
   all: "All our places",
 };
 
@@ -125,10 +125,6 @@ export function PlacesBrowser({
 
   const originLabel = filters.origin?.kind === "me" ? "you" : filters.origin?.label;
   const chips: { key: string; label: string; clear: Partial<Filters> }[] = [
-    // Want / Been / All have tabs; only "Not interested" needs a chip.
-    ...(filters.status === "not_interested"
-      ? [{ key: "status", label: STATUS_LABELS.not_interested, clear: { status: "want" as const } }]
-      : []),
     ...filters.categories.map((slug) => ({
       key: `cat-${slug}`,
       label: `${categoryMap.get(slug)?.emoji ?? ""} ${categoryMap.get(slug)?.label ?? slug}`,
@@ -346,7 +342,9 @@ export function PlacesBrowser({
               <ul className="flex flex-col">
                 {g.places.map((p) => (
                   <li key={p.id}>
-                    <PlaceCard place={p} category={categoryMap.get(p.category)} stay={stay} />
+                    <SwipeToDelete id={p.id} name={p.name}>
+                      <PlaceCard place={p} category={categoryMap.get(p.category)} stay={stay} />
+                    </SwipeToDelete>
                   </li>
                 ))}
               </ul>

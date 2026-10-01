@@ -126,6 +126,16 @@ export async function deletePlace(id: number) {
   redirect("/");
 }
 
+/** Delete from the list (swipe), staying on the page. */
+export async function removePlace(id: number) {
+  const { accountId } = await requireSession();
+  db()
+    .delete(schema.places)
+    .where(and(eq(schema.places.id, id), eq(schema.places.accountId, accountId)))
+    .run();
+  refresh();
+}
+
 export async function refreshGoogleData(id: number) {
   const { accountId } = await requireSession();
   assertOwn(accountId, id);

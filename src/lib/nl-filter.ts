@@ -39,7 +39,7 @@ export async function parseNaturalFilter(
   const slugs = categories.map((c) => c.slug) as [string, ...string[]];
   const Schema = z.object({
     categories: z.array(z.enum(slugs)),
-    status: z.enum(["want", "been", "not_interested", "all"]).nullable(),
+    status: z.enum(["want", "been", "all"]).nullable(),
     near: z.enum(["none", "me", "place"]),
     near_place: z.string().nullable().describe("Town or place name when near is 'place'"),
     km: z.number().nullable(),

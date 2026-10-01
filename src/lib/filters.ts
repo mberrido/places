@@ -35,7 +35,7 @@ export type View = "list" | "map";
 
 export type Filters = {
   q: string;
-  status: Status | "all";
+  status: "want" | "been" | "all";
   categories: string[];
   origin: Origin | null;
   km: number | null;
@@ -50,7 +50,7 @@ export type Filters = {
 export const DISTANCE_PRESETS = [5, 10, 25, 50, 100];
 export const RATING_PRESETS = [3.5, 4, 4.5];
 
-const STATUS_VALUES = ["want", "been", "not_interested", "all"] as const;
+const STATUS_VALUES = ["want", "been", "all"] as const;
 
 function list(v: string | null) {
   return v ? v.split(",").map((s) => s.trim()).filter(Boolean) : [];
