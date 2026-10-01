@@ -12,7 +12,7 @@ import { TagInput } from "@/components/tag-input";
 import { locationMessage, newSessionToken, useDeviceLocation, type LatLng } from "@/lib/use-location";
 import { createPlace, type NewPlaceInput } from "../actions";
 import { ScreenshotButton } from "@/components/screenshot-button";
-import { IngestBox } from "../inbox/ingest-box";
+import { IngestBox } from "./ingest-box";
 import { NearMe } from "./near-me";
 
 const PinPicker = dynamic(() => import("@/components/map/pin-picker"), { ssr: false });

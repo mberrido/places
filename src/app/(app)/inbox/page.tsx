@@ -4,8 +4,6 @@ import { requireSession } from "@/lib/auth";
 import { failStuckIngests, inboxItems } from "@/lib/ingest";
 import { isProfileUrl } from "@/lib/instagram";
 import { pendingShares } from "@/lib/shares";
-import { ScreenshotButton } from "@/components/screenshot-button";
-import { IngestBox } from "./ingest-box";
 import { StatusBadge } from "./status-badge";
 
 export const metadata = { title: "Inbox" };
@@ -19,11 +17,8 @@ export default async function InboxPage() {
     <main className="flex flex-col gap-4">
       <header className="pb-1 pt-6">
         <h1 className="font-display text-[44px] leading-none">Inbox</h1>
-        <p className="mt-1 text-sm text-muted">Instagram posts to turn into places, and places shared with you.</p>
+        <p className="mt-2 text-sm text-muted">Things waiting for you: Instagram posts to confirm, and places shared with you.</p>
       </header>
-
-      <IngestBox />
-      <ScreenshotButton />
 
       {shares.length > 0 && (
         <ul className="flex flex-col gap-2">
@@ -52,7 +47,21 @@ export default async function InboxPage() {
       )}
 
       {items.length === 0 && shares.length === 0 ? (
-        <p className="mt-8 text-center text-sm text-muted">Nothing waiting. Paste a link above to get started.</p>
+        <div className="mt-12 flex flex-col items-center text-center">
+          <span className="grid size-14 place-items-center rounded-full bg-accent-soft text-accent">
+            <Icon name="check" className="size-7" />
+          </span>
+          <p className="mt-3 font-display text-3xl">Nothing waiting</p>
+          <p className="mt-1 max-w-xs text-sm text-muted">
+            Posts you save from Instagram, and places others share with you, show up here.
+          </p>
+          <Link
+            href="/add?tab=instagram"
+            className="mt-4 rounded-full bg-accent px-5 py-2.5 font-medium text-on-accent"
+          >
+            Add from Instagram
+          </Link>
+        </div>
       ) : items.length === 0 ? null : (
         <ul className="flex flex-col gap-2">
           {items.map((i) => {

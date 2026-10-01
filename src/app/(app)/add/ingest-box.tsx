@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Icon } from "@/components/icons";
-import { startIngest, type IngestFormState } from "./actions";
+import { startIngest, type IngestFormState } from "../inbox/actions";
 
 /** Paste an Instagram link (or a caption) to start. */
 export function IngestBox({ initial = "" }: { initial?: string }) {
