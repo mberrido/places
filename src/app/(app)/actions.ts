@@ -9,6 +9,7 @@ import { STATUSES } from "@/db/schema";
 import { requireSession } from "@/lib/auth";
 import { GoogleUnavailable, placeDetails } from "@/lib/google";
 import { findByGoogleId, getPlace, insertPlace, normaliseTags, refreshPlace, setTags } from "@/lib/places";
+import { deleteTripPhoto, deleteTripPhotoFiles } from "@/lib/trip-photos";
 
 const optionalText = z
   .string()
@@ -119,6 +120,7 @@ export async function updatePlace(id: number, patch: z.input<typeof PlacePatch>)
 
 export async function deletePlace(id: number) {
   const { accountId } = await requireSession();
+  if (getPlace(accountId, id)) deleteTripPhotoFiles([id]);
   db()
     .delete(schema.places)
     .where(and(eq(schema.places.id, id), eq(schema.places.accountId, accountId)))
@@ -129,10 +131,17 @@ export async function deletePlace(id: number) {
 /** Delete from the list (swipe), staying on the page. */
 export async function removePlace(id: number) {
   const { accountId } = await requireSession();
+  if (getPlace(accountId, id)) deleteTripPhotoFiles([id]);
   db()
     .delete(schema.places)
     .where(and(eq(schema.places.id, id), eq(schema.places.accountId, accountId)))
     .run();
+  refresh();
+}
+
+export async function removeTripPhoto(photoId: number) {
+  const { accountId } = await requireSession();
+  deleteTripPhoto(accountId, z.number().int().parse(photoId));
   refresh();
 }
 

@@ -224,6 +224,24 @@ export const ingests = sqliteTable(
   (t) => [index("ingests_account_status_idx").on(t.accountId, t.status)],
 );
 
+/** Photos the household took there, stored next to the database (trip-photos/). */
+export const tripPhotos = sqliteTable(
+  "trip_photos",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    placeId: integer("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+    file: text("file").notNull(), // random base name; <file>.jpg and <file>-t.jpg on disk
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    addedBy: text("added_by"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now),
+  },
+  (t) => [index("trip_photos_place_idx").on(t.placeId)],
+);
+export type TripPhoto = typeof tripPhotos.$inferSelect;
+
 export const SHARE_STATUSES = ["pending", "saved", "dismissed"] as const;
 
 /**

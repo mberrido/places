@@ -9,9 +9,11 @@ import { requireSession } from "@/lib/auth";
 import { resolveWhen, ymd } from "@/lib/when";
 import { otherAccounts } from "@/lib/accounts";
 import { sharesSentFor } from "@/lib/shares";
+import { listTripPhotos } from "@/lib/trip-photos";
 import { HotelBooking } from "./hotel-booking";
 import { SharePlace } from "./share-place";
 import { DangerZone, EditDetails, NotesAndTags, StatusControl } from "./place-controls";
+import { TripPhotos } from "./trip-photos";
 
 export async function generateMetadata(props: PageProps<"/places/[id]">) {
   const { accountId } = await requireSession();
@@ -160,6 +162,8 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
             </a>
           ))}
         </section>
+
+        <TripPhotos placeId={place.id} photos={listTripPhotos(place.id)} />
 
         {place.category === "hotel" && (
           <HotelBooking

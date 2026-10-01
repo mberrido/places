@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import type { Category, Status } from "@/db/schema";
 import { STATUS_LABELS } from "@/lib/categories";
 import { Icon, Star } from "@/components/icons";
@@ -25,6 +25,9 @@ export function StatusControl({
 }) {
   const [pending, start] = useTransition();
   const save = (patch: Parameters<typeof updatePlace>[1]) => start(() => updatePlace(id, patch));
+  const [visited, setVisited] = useState(visitedAt ?? "");
+  const saveDate = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const dateInput = useRef<HTMLInputElement>(null);
 
   return (
     <section className={`rounded-2xl border border-border bg-surface p-3 ${pending ? "opacity-70" : ""}`}>
@@ -32,7 +35,11 @@ export function StatusControl({
         {(["want", "been"] as const).map((s) => (
           <button
             key={s}
-            onClick={() => s !== status && save(s === "been" ? { status: s, visitedAt: visitedAt ?? today() } : { status: s })}
+            onClick={() => {
+              if (s === status) return;
+              if (s === "been" && !visited) setVisited(today());
+              save(s === "been" ? { status: s, visitedAt: visited || today() } : { status: s });
+            }}
             className={`flex-1 rounded-lg py-1.5 text-sm font-medium ${
               s === status ? "bg-surface shadow-sm" : "text-muted"
             }`}
@@ -59,16 +66,37 @@ export function StatusControl({
               ))}
             </div>
           </div>
-          <label className="text-right">
+          <div className="text-right">
             <span className="block text-xs text-muted">Visited</span>
-            <input
-              type="date"
-              defaultValue={visitedAt ?? ""}
-              max={today()}
-              onChange={(e) => e.target.value && save({ visitedAt: e.target.value })}
-              className="bg-transparent text-right font-medium"
-            />
-          </label>
+            {/* The native picker sits invisibly over a readable button. Saving waits until the
+                date stops changing: iOS fires a change for every turn of the wheel. */}
+            <label className="relative mt-0.5 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 font-medium">
+              <Icon name="calendar" className="size-4 text-accent" />
+              {visited
+                ? new Date(`${visited}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                : "Pick a date"}
+              <input
+                ref={dateInput}
+                type="date"
+                value={visited}
+                max={today()}
+                aria-label="Date visited"
+                onClick={() => {
+                  try {
+                    dateInput.current?.showPicker();
+                  } catch {}
+                }}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (!v) return;
+                  setVisited(v);
+                  clearTimeout(saveDate.current);
+                  saveDate.current = setTimeout(() => save({ visitedAt: v }), 800);
+                }}
+                className="absolute inset-0 size-full cursor-pointer opacity-0"
+              />
+            </label>
+          </div>
         </div>
       )}
     </section>
