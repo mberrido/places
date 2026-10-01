@@ -2,21 +2,18 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import { DATABASE_PATH, db } from "@/db";
-import { googleConfigured } from "./google";
 import { failStuckIngests } from "./ingest";
 import { prunePhotoCache } from "./photo-cache";
-import { refreshPlace, stalePlaceIds } from "./places";
 
 // Nightly housekeeping at ~03:00 (the container runs with TZ=Europe/London):
-// a SQLite backup, a refresh of Google data older than 30 days, and clearing
-// inbox items that got stuck. Runs in-process; no cron needed in the container.
+// a SQLite backup, pruning the photo cache, and clearing inbox items that got
+// stuck. Runs in-process; no cron needed in the container.
 
 export const BACKUP_DIR = path.resolve(
   /*turbopackIgnore: true*/ process.env.BACKUP_DIR ?? path.join(path.dirname(DATABASE_PATH), "backups"),
 );
 const KEEP = Math.max(1, Number(process.env.BACKUP_KEEP) || 14);
 const RUN_HOUR = 3;
-const MAX_REFRESHES = 100; // per night, to bound Google spend
 
 function today() {
   const d = new Date();
@@ -53,10 +50,9 @@ export async function backupNow() {
   return dest;
 }
 
-export const nightlyStatus: { lastRun: Date | null; lastError: string | null; refreshed: number } = {
+export const nightlyStatus: { lastRun: Date | null; lastError: string | null } = {
   lastRun: null,
   lastError: null,
-  refreshed: 0,
 };
 
 export async function runNightly() {
@@ -77,16 +73,9 @@ export async function runNightly() {
   } catch (e) {
     errors.push(`photo cache: ${(e as Error).message}`);
   }
-  let refreshed = 0;
-  if (googleConfigured()) {
-    for (const id of stalePlaceIds().slice(0, MAX_REFRESHES)) {
-      await refreshPlace(id); // never throws; failures are recorded on the place
-      refreshed++;
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    if (refreshed) console.log(`nightly: refreshed Google data for ${refreshed} places`);
-  }
-  Object.assign(nightlyStatus, { lastRun: new Date(), lastError: errors.join("; ") || null, refreshed });
+  // Google data is refreshed when a place is opened (if over 30 days old), not here:
+  // refreshing every saved place each month cost a paid details call per place.
+  Object.assign(nightlyStatus, { lastRun: new Date(), lastError: errors.join("; ") || null });
   if (errors.length) console.error("nightly:", errors.join("; "));
 }
 

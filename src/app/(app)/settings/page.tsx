@@ -30,7 +30,13 @@ export default async function SettingsPage() {
   const h = await headers();
   // The address the app was reached on (behind DSM's proxy, its public HTTPS name).
   const origin = `${h.get("x-forwarded-proto")?.split(",")[0] ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
-  const usage = db().select().from(schema.apiUsage).orderBy(desc(schema.apiUsage.month)).all();
+  // api_usage also holds the daily Claude counters (day keys); only monthly Google rows here.
+  const usage = db()
+    .select()
+    .from(schema.apiUsage)
+    .orderBy(desc(schema.apiUsage.month))
+    .all()
+    .filter((u) => /^\d{4}-\d{2}$/.test(u.month));
   const thisMonth = new Date().toISOString().slice(0, 7);
   const months = [...new Set([thisMonth, ...usage.map((u) => u.month)])].slice(0, 3);
   const count = (month: string, api: string) => usage.find((u) => u.month === month && u.api === api)?.count ?? 0;
@@ -124,7 +130,7 @@ export default async function SettingsPage() {
           <p className="mt-2 text-xs text-muted">
             Calls this app has made, against the approximate free monthly allowance for each SKU. When one reaches its
             allowance the app stops using it until the 1st (set <code>GOOGLE_ALLOW_OVER_FREE=1</code> to lift this).
-            Photos are cached on the server for 30 days, so each costs one call a month however often it&apos;s shown.
+            Photos of saved places are cached on the server for 30 days, so each costs at most one call a month; suggestions only load a photo for the top match.
           </p>
         </section>
       )}
@@ -154,7 +160,7 @@ export default async function SettingsPage() {
           <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3 text-sm">
             <p className="text-muted">
               A copy of the database is saved every night after 03:00 to <code className="break-all">{BACKUP_DIR}</code>{" "}
-              (last 14 kept). Google data older than 30 days is refreshed at the same time.
+              (last 14 kept). Google data is refreshed when you open a place and it&apos;s over 30 days old.
             </p>
             {(() => {
               const backups = listBackups();
@@ -174,8 +180,8 @@ export default async function SettingsPage() {
             })()}
             {nightlyStatus.lastRun && (
               <p className="text-xs text-muted">
-                Last nightly run {nightlyStatus.lastRun.toLocaleString("en-GB")}, refreshed {nightlyStatus.refreshed}{" "}
-                places{nightlyStatus.lastError ? `. Problem: ${nightlyStatus.lastError}` : ""}
+                Last nightly run {nightlyStatus.lastRun.toLocaleString("en-GB")}
+                {nightlyStatus.lastError ? `. Problem: ${nightlyStatus.lastError}` : ""}
               </p>
             )}
             <BackupButton />

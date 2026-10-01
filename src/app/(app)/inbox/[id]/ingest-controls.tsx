@@ -155,7 +155,7 @@ export function ConfirmForm({
                   <p className="text-xs text-muted">Tap the right match. Tap more than one to save several (e.g. branches of a chain).</p>
                 )}
                 {p.candidates.length > 0 ? (
-                  p.candidates.map((cand) => {
+                  p.candidates.map((cand, ci) => {
                     const savedId = alreadySaved[cand.googlePlaceId];
                     const selected = c.googlePlaceIds.includes(cand.googlePlaceId);
                     return (
@@ -175,7 +175,8 @@ export function ConfirmForm({
                         }`}
                       >
                         <span className="size-14 shrink-0 overflow-hidden rounded-lg bg-surface-2">
-                          {cand.photoName && (
+                          {/* Only the top suggestion gets a photo: each one is a paid Google call. */}
+                          {cand.photoName && ci === 0 && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={`/api/google/photo?name=${encodeURIComponent(cand.photoName)}`}

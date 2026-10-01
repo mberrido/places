@@ -46,9 +46,13 @@ async function original(photoName: string, key: string): Promise<Buffer> {
   return pending;
 }
 
-/** A Google photo at (at most) `width` px wide, as JPEG. Throws GoogleUnavailable on a miss that fails. */
-export async function getPhoto(photoName: string, width: number): Promise<Buffer> {
-  const key = crypto.createHash("sha256").update(photoName).digest("hex").slice(0, 32);
+/**
+ * A Google photo at (at most) `width` px wide, as JPEG. Throws GoogleUnavailable on a miss that fails.
+ * `cacheId` names the cache entry: Google gives a photo a new name every time a place's details are
+ * fetched, so saved places pass a stable id (place + position) and keep their cached copy across refreshes.
+ */
+export async function getPhoto(photoName: string, width: number, cacheId = photoName): Promise<Buffer> {
+  const key = crypto.createHash("sha256").update(cacheId).digest("hex").slice(0, 32);
   const variant = file(`${key}-w${width}.jpg`);
   if (fresh(variant)) return fs.readFileSync(variant);
   const orig = await original(photoName, key);

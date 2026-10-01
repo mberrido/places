@@ -17,7 +17,11 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/api/photos/[plac
   const width = WIDTHS.find((w) => w >= requested) ?? WIDTHS.at(-1)!;
 
   const cache = db()
-    .select({ photos: schema.googleCache.photos, refreshed: schema.googleCache.lastRefreshedAt })
+    .select({
+      photos: schema.googleCache.photos,
+      refreshed: schema.googleCache.lastRefreshedAt,
+      googlePlaceId: schema.places.googlePlaceId,
+    })
     .from(schema.googleCache)
     // Only photos of this household's own places.
     .innerJoin(schema.places, eq(schema.places.id, schema.googleCache.placeId))
@@ -27,7 +31,7 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/api/photos/[plac
   if (!photo || !googleConfigured()) return new Response("Not found", { status: 404 });
 
   try {
-    return image(await getPhoto(photo.name, width));
+    return image(await getPhoto(photo.name, width, `place:${cache!.googlePlaceId}:${index}`));
   } catch (e) {
     if (!(e instanceof GoogleUnavailable)) throw e;
     console.error(`photo ${placeId}/${index}:`, e.message);

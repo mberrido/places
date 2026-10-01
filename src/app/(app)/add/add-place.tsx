@@ -325,13 +325,13 @@ function PlaceForm({
         <div className="overflow-hidden rounded-2xl border border-border bg-surface">
           {d.photos.length > 0 && (
             <div className="scrollbar-none flex h-44 snap-x snap-mandatory gap-0.5 overflow-x-auto">
-              {d.photos.slice(0, 4).map((p) => (
+              {d.photos.slice(0, 1).map((p) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={p.name}
                   src={`/api/google/photo?name=${encodeURIComponent(p.name)}`}
                   alt=""
-                  className="h-full w-4/5 shrink-0 snap-start object-cover"
+                  className="h-full w-full shrink-0 snap-start object-cover"
                 />
               ))}
             </div>

@@ -13,6 +13,7 @@ import { listTripPhotos } from "@/lib/trip-photos";
 import { HotelBooking } from "./hotel-booking";
 import { SharePlace } from "./share-place";
 import { DangerZone, EditDetails, NotesAndTags, StatusControl } from "./place-controls";
+import { PlaceGallery } from "./place-gallery";
 import { TripPhotos } from "./trip-photos";
 
 export async function generateMetadata(props: PageProps<"/places/[id]">) {
@@ -80,35 +81,7 @@ export default async function PlacePage(props: PageProps<"/places/[id]">) {
     <main className="-mx-4">
       <div className="relative mx-4 mt-2 overflow-hidden rounded-[22px] bg-surface-2">
         {photos.length > 0 ? (
-          <div className="scrollbar-none flex aspect-[4/3.4] snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain">
-            {photos.map((p, i) => (
-              <figure key={p.name} className="relative h-full w-full shrink-0 snap-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/photos/${place.id}/${i}?w=960`}
-                  alt=""
-                  loading={i === 0 ? "eager" : "lazy"}
-                  draggable={false}
-                  className="size-full select-none object-cover"
-                />
-                <figcaption className="absolute bottom-3 right-3 rounded-full bg-ink/70 px-2.5 py-1 text-xs text-on-ink">
-                  {i + 1} of {photos.length}
-                  {p.attributions[0] && (
-                    <>
-                      {" · "}
-                      {p.attributions[0].uri ? (
-                        <a href={p.attributions[0].uri} target="_blank" rel="noreferrer" className="underline">
-                          {p.attributions[0].displayName}
-                        </a>
-                      ) : (
-                        p.attributions[0].displayName
-                      )}
-                    </>
-                  )}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <PlaceGallery placeId={place.id} photos={photos} />
         ) : (
           <div className="grid h-52 place-items-center text-6xl" aria-hidden>
             {category?.emoji ?? "📍"}

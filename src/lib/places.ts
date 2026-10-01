@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { GoogleCache, Place, Status } from "@/db/schema";
 import type { PlaceSummary } from "./filters";
@@ -239,22 +239,6 @@ export async function refreshPlace(placeId: number, { force = false } = {}) {
   }
 }
 
-/** Places whose Google data is older than 30 days (for the nightly refresh). */
-export function stalePlaceIds(): number[] {
-  const cutoff = new Date(Date.now() - STALE_AFTER_MS);
-  return db()
-    .select({ id: schema.places.id })
-    .from(schema.places)
-    .leftJoin(schema.googleCache, eq(schema.googleCache.placeId, schema.places.id))
-    .where(
-      and(
-        sql`${schema.places.googlePlaceId} is not null`,
-        sql`(${schema.googleCache.lastRefreshedAt} is null or ${schema.googleCache.lastRefreshedAt} < ${cutoff.getTime()})`,
-      ),
-    )
-    .all()
-    .map((r) => r.id);
-}
 
 // ---------------------------------------------------------------- Menu link
 
