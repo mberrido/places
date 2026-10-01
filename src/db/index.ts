@@ -1,11 +1,11 @@
 import "server-only";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { eq } from "drizzle-orm";
-import { hashPassword, newIngestToken } from "@/lib/passwords";
 import * as schema from "./schema";
 
 export const DATABASE_PATH = path.resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH ?? "./data/places.db");
@@ -32,36 +32,20 @@ export function seedCategories(d: DB, accountId: number) {
 }
 
 /**
- * Account 1 is created by the accounts migration (it owns everything from
- * before accounts existed) or here on a fresh install. Until it has a
- * password, it takes APP_PASSWORD, HOUSEHOLD_MEMBERS and INGEST_TOKEN from
- * the environment, so an existing install keeps the same login and Shortcut.
+ * Every group needs its default categories, a join code and a Shortcut token.
+ * Groups from before Google sign-in get the code and token here on first start.
  */
-function ensureFirstAccount(d: DB) {
-  const members = (process.env.HOUSEHOLD_MEMBERS ?? "")
-    .split(",")
-    .map((m) => m.trim())
-    .filter(Boolean);
-  let first = d.select().from(schema.accounts).where(eq(schema.accounts.id, 1)).get();
-  if (!first) {
-    d.insert(schema.accounts).values({ id: 1, name: "Home", login: "home", isAdmin: true }).run();
-    first = d.select().from(schema.accounts).where(eq(schema.accounts.id, 1)).get()!;
-  }
-  if (!first.passwordHash && process.env.APP_PASSWORD) {
-    d.update(schema.accounts)
-      .set({
-        passwordHash: hashPassword(process.env.APP_PASSWORD),
-        members: first.members.length ? first.members : members,
-        name: first.name === "Home" && members.length ? members.join(" & ") : first.name,
-        ingestToken: first.ingestToken ?? process.env.INGEST_TOKEN ?? newIngestToken(),
-      })
-      .where(eq(schema.accounts.id, 1))
-      .run();
-  }
-  for (const { id } of d.select({ id: schema.accounts.id }).from(schema.accounts).all()) {
-    if (!d.select().from(schema.categories).where(eq(schema.categories.accountId, id)).limit(1).get()) {
-      seedCategories(d, id);
+function ensureGroups(d: DB) {
+  for (const a of d.select().from(schema.accounts).all()) {
+    if (!d.select().from(schema.categories).where(eq(schema.categories.accountId, a.id)).limit(1).get()) {
+      seedCategories(d, a.id);
     }
+    const patch: Partial<typeof schema.accounts.$inferInsert> = {};
+    if (!a.joinCode) {
+      patch.joinCode = Array.from(crypto.randomBytes(8), (b) => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[b % 31]).join("");
+    }
+    if (!a.ingestToken) patch.ingestToken = process.env.INGEST_TOKEN || crypto.randomBytes(24).toString("base64url");
+    if (Object.keys(patch).length) d.update(schema.accounts).set(patch).where(eq(schema.accounts.id, a.id)).run();
   }
 }
 
@@ -80,7 +64,7 @@ function open(): DB {
   const broken = sqlite.pragma("foreign_key_check") as unknown[];
   if (broken.length) throw new Error(`Database migration left ${broken.length} broken references`);
   sqlite.pragma("foreign_keys = ON");
-  ensureFirstAccount(db);
+  ensureGroups(db);
   return db;
 }
 

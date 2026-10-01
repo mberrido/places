@@ -8,15 +8,14 @@ export const SESSION_COOKIE = "places_session";
 export const SESSION_MAX_AGE_S = 365 * 24 * 3600;
 const RENEW_AFTER_MS = 7 * 24 * 3600 * 1000;
 
-/** Who's logged in: the household account, the person's name, and the account's session version. */
-export type Session = { accountId: number; name: string; v: number; iat: number };
+/** Who's signed in: the user (their group is looked up per request, so leaving or removal applies at once). */
+export type Session = { userId: number; iat: number };
 
 let cachedSecret: Buffer | undefined;
 
 /**
  * Signing key: SESSION_SECRET if set, otherwise a random key generated once and
- * kept next to the database. (Per-account logouts use the account's session
- * version instead, checked in lib/auth.)
+ * kept next to the database.
  */
 function key(): Buffer {
   if (!cachedSecret) {
@@ -32,7 +31,7 @@ function key(): Buffer {
         fs.writeFileSync(file, secret, { mode: 0o600 });
       }
     }
-    cachedSecret = crypto.createHmac("sha256", secret).update("places-session:v2").digest();
+    cachedSecret = crypto.createHmac("sha256", secret).update("places-session:v3").digest();
   }
   return cachedSecret;
 }
@@ -41,8 +40,8 @@ function sign(data: string) {
   return crypto.createHmac("sha256", key()).update(data).digest("base64url");
 }
 
-export function createSessionValue(s: Omit<Session, "iat">): string {
-  const payload = Buffer.from(JSON.stringify({ ...s, iat: Date.now() } satisfies Session)).toString("base64url");
+export function createSessionValue(userId: number): string {
+  const payload = Buffer.from(JSON.stringify({ userId, iat: Date.now() } satisfies Session)).toString("base64url");
   return `${payload}.${sign(payload)}`;
 }
 
@@ -55,7 +54,7 @@ export function readSessionValue(value: string | undefined): Session | null {
   if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) return null;
   try {
     const s = JSON.parse(Buffer.from(payload, "base64url").toString()) as Session;
-    if (typeof s.name !== "string" || typeof s.iat !== "number" || typeof s.accountId !== "number") return null;
+    if (typeof s.userId !== "number" || typeof s.iat !== "number") return null;
     if (Date.now() - s.iat > SESSION_MAX_AGE_S * 1000) return null;
     return s;
   } catch {

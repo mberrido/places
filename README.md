@@ -23,7 +23,7 @@ Needs Node 20.9+.
 
 ```sh
 npm install
-cp .env.example .env.local     # then fill in APP_PASSWORD and GOOGLE_PLACES_API_KEY
+cp .env.example .env.local     # then fill in the Google client ID/secret and API keys
 npm run dev                    # http://localhost:3003
 ```
 
@@ -48,12 +48,11 @@ See [`.env.example`](.env.example). All keys are read on the server only and nev
 
 | Variable | Required | Notes |
 |---|---|---|
-| `APP_PASSWORD` | first run | Password for the first (admin) account. Only read until that account has one; after that, change it in Settings. |
-| `HOUSEHOLD_MEMBERS` | no | e.g. `Mal,Sam`: the first account's members and name. First run only. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | yes | The OAuth client for "Sign in with Google" (below). |
+| `APP_URL` | on the NAS | The public HTTPS address, e.g. `https://places.<name>.synology.me`. Google only sends people back there. Blank locally. |
 | `SESSION_SECRET` | no | Cookie signing key. If blank, one is generated into the data folder. |
 | `GOOGLE_PLACES_API_KEY` | for Google features | See below. |
 | `ANTHROPIC_API_KEY` | stage 3+ | Instagram caption / screenshot extraction. |
-| `INGEST_TOKEN` | no | The first account's Shortcut token (first run only). Each account's token is in Settings. |
 | `META_OEMBED_TOKEN` | no | Instagram oEmbed, if you have a Meta app. |
 | `DATABASE_PATH` | no | Defaults to `./data/places.db` (Docker: `/data/places.db`). |
 | `BACKUP_DIR` | no | Nightly backups. Defaults to `data/backups` (Docker: `/backups`). |
@@ -61,30 +60,51 @@ See [`.env.example`](.env.example). All keys are read on the server only and nev
 | `DISABLE_NIGHTLY` | no | `1` turns off the nightly backup and refresh job. |
 | `PUID` / `PGID` | Docker | The DSM user/group that owns the data and backup folders. |
 
-## Households, accounts and sharing
+## Groups, sign-in and sharing
 
-The app has **one account per household**. You and your partner share an
-account (each picks their own name at login, recorded as "added by"); a
-friend's household gets its own. Each account has its own places,
-categories, tags, inbox and iOS Shortcut token, and can't see anyone else's.
+Everyone signs in with **Google**. Places live in **groups**: you and your
+partner share one, a friend's household has its own. Each group has its own
+places, categories, tags, inbox and iOS Shortcut token, and can't see anyone
+else's.
 
-- **Logging in:** account name (e.g. `home`), password, and your name.
-- **The first account** is the admin. It's created automatically: on an
-  existing install it owns everything saved so far, and its password comes
-  from `APP_PASSWORD` the first time. Its login starts as `home`; rename it
-  in Settings → Your household.
-- **Adding a household** (admin): Settings → Accounts → *Add a household*:
-  a name (what others see, e.g. "Dave & Jo"), a login (e.g. `dave`) and a
-  password. Send them the web address, login and password; they can change
-  the password and names in their own Settings. The admin can also reset
-  a household's password, which logs them out everywhere.
-- **Sharing:** on any place, **Share with…** picks one or more households
-  and an optional note. It lands in their **Inbox** as "Mal shared The Pig".
-  They choose a category and **Save to our list** (they get their own copy,
-  with fresh Google data), or **Not for us**. Your place page shows who you
-  shared it with and whether they saved it.
-- **Costs:** every household uses this server's Google and Claude keys.
-  Google usage in Settings (admin only) is the total for all households.
+- **First sign-in:** you're asked to **start a new group** (give it a name) or
+  **join a group** with its code. The very first person to sign in to a server
+  that already has places (from before Google sign-in) can also **carry on with
+  those places**.
+- **Join codes:** Settings → Your group shows the code (e.g. `PIG7-K4QX`) with
+  **Copy** and **Make a new code**. Anyone with the code can join and see
+  everything in the group, so only give it to people you trust; a new code stops
+  the old one working. Members are listed there and anyone in the group can
+  remove someone or leave.
+- **The first group** on the server is the admin one: only its members see
+  Google API usage and backups in Settings.
+- **Sharing:** on any place, **Share with…** picks one or more groups and an
+  optional note. It lands in their **Inbox**; they choose a category and
+  **Save to our list** (their own copy, with fresh Google data) or **Not for
+  us**. Your place page shows who you shared it with and whether they saved it.
+- **Costs:** every group uses this server's Google and Claude keys.
+
+### Sign in with Google: setup
+
+In the same Google Cloud project as the Places key:
+
+1. **APIs & Services → OAuth consent screen** (or **Google Auth Platform**) →
+   Get started. App name `Places`, your support email, Audience **External**,
+   contact email. No logo (a logo triggers Google's review).
+2. **Branding → Authorised domains:** add your domain, e.g.
+   `<name>.synology.me`.
+3. **Audience:** leave it in **Testing** and add every person's Google address
+   under **Test users** (up to 100). People not on the list can't sign in.
+4. **Clients → Create client → Web application.** Authorised JavaScript
+   origins: `https://places.<name>.synology.me` and `http://localhost:3003`.
+   Authorised redirect URIs: the same two, each followed by
+   `/api/auth/google/callback`.
+5. Put the **Client ID** and **Client secret** in `.env.local` (dev) and the
+   NAS `.env` as `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, plus
+   `APP_URL=https://places.<name>.synology.me` on the NAS.
+
+Sign-in only works on those registered addresses: on the NAS that's the HTTPS
+name (the plain `http://<nas-ip>:8421` address sends you there to sign in).
 
 ## Browsing, filters and the map
 
@@ -254,10 +274,9 @@ openssl rand -base64 32      # paste as INGEST_TOKEN
 vi .env && chmod 600 .env
 ```
 
-Fill in `GOOGLE_PLACES_API_KEY`, `ANTHROPIC_API_KEY`, and `PUID`/`PGID`
-from step 1. `APP_PASSWORD`, `HOUSEHOLD_MEMBERS` and `INGEST_TOKEN` only set
-up the first account on an empty database. If you're bringing your Mac's
-database across (below), your accounts come with it and these are ignored.
+Fill in `GOOGLE_PLACES_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID`,
+`GOOGLE_CLIENT_SECRET`, `APP_URL` (the HTTPS address) and `PUID`/`PGID` from
+step 1.
 Leave `DATABASE_PATH` and `BACKUP_DIR` commented out (the image sets them).
 Wrap values containing `$`, `#` or spaces in single quotes.
 
@@ -293,8 +312,8 @@ database, so they come across too.
    `*.<name>.synology.me` certificate to the `places.` entry.
 3. Router: TCP **443** forwarded to the NAS (already done for weekly-shop).
    Don't forward 8421 or port 80.
-4. Open `https://places.<name>.synology.me` on each phone, log in, then
-   **Share → Add to Home Screen**.
+4. Open `https://places.<name>.synology.me` on each phone, sign in with
+   Google, then **Share → Add to Home Screen**.
 5. Update the iOS Shortcut's URL to `https://places.<name>.synology.me/api/ingest`.
 6. Optional: tighten the Google key's application restriction to your home's
    public IP now that all calls come from the NAS.
@@ -347,7 +366,7 @@ returns straight away; the post is read in the background and waits in the
 **Inbox** for you to confirm.
 
 You'll need the **endpoint** and **token** from Settings → Share to Places.
-Each household has its own token, which decides whose inbox a share goes to,
+Each group has its own token, which decides whose inbox a share goes to,
 so your friend builds (or imports) the Shortcut with *their* token.
 The endpoint must be reachable from the phone: the public
 `https://places.<name>.synology.me/api/ingest` once deployed, or

@@ -8,7 +8,7 @@ import {
 } from "@/lib/session";
 
 // Reachable without a session cookie.
-const PUBLIC = [/^\/login$/, /^\/api\/health$/, /^\/api\/ingest$/];
+const PUBLIC = [/^\/login$/, /^\/api\/health$/, /^\/api\/ingest$/, /^\/api\/auth\/google(\/callback)?$/];
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -27,11 +27,7 @@ export function proxy(request: NextRequest) {
   const res = NextResponse.next();
   // Sliding renewal so daily use never logs you out.
   if (shouldRenew(session)) {
-    res.cookies.set(
-      SESSION_COOKIE,
-      createSessionValue({ accountId: session.accountId, name: session.name, v: session.v }),
-      cookieOptions(request.headers),
-    );
+    res.cookies.set(SESSION_COOKIE, createSessionValue(session.userId), cookieOptions(request.headers));
   }
   return res;
 }

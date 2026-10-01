@@ -1,6 +1,6 @@
 import { desc } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { getAccount, listAccounts } from "@/lib/accounts";
+import { formatCode, getAccount, groupMembers } from "@/lib/accounts";
 import { requireSession } from "@/lib/auth";
 import { claudeConfigured } from "@/lib/extract";
 import { FREE_MONTHLY, googleConfigured, type GoogleApi } from "@/lib/google";
@@ -8,7 +8,7 @@ import { getCategories } from "@/lib/places";
 import { logout } from "../../login/actions";
 import { headers } from "next/headers";
 import { BACKUP_DIR, listBackups, nightlyStatus } from "@/lib/nightly";
-import { AccountsAdmin, MyHousehold } from "./account-panels";
+import { GroupPanel } from "./group-panel";
 import { BackupButton } from "./backup-button";
 import { CategoryEditor } from "./category-editor";
 import { ShareSetup } from "./share-setup";
@@ -43,32 +43,30 @@ export default async function SettingsPage() {
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">You</h2>
-        <div className="flex items-center justify-between rounded-2xl border border-border bg-surface p-3">
-          <span>
-            <strong>{session.name}</strong>
-            <span className="block text-sm text-muted">{session.accountName}</span>
+        <div className="flex items-center gap-3 rounded-3xl bg-surface p-4">
+          {session.picture ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={session.picture} alt="" referrerPolicy="no-referrer" className="size-11 rounded-full object-cover" />
+          ) : null}
+          <span className="min-w-0 flex-1">
+            <strong className="block truncate">{session.fullName}</strong>
+            <span className="block truncate text-sm text-muted">{session.email}</span>
           </span>
           <form action={logout}>
-            <button className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium">Log out</button>
+            <button className="rounded-full border border-border px-4 py-2 text-sm font-medium">Sign out</button>
           </form>
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Your household</h2>
-        <MyHousehold name={me.name} login={me.login} members={me.members} />
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Your group</h2>
+        <GroupPanel
+          name={me.name}
+          code={formatCode(me.joinCode)}
+          members={groupMembers(session.accountId)}
+          myId={session.userId}
+        />
       </section>
-
-      {session.isAdmin && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Accounts</h2>
-          <AccountsAdmin accounts={listAccounts()} myId={session.accountId} />
-          <p className="mt-2 text-xs text-muted">
-            Each household has its own list, categories, inbox and Shortcut. You can share places between them. All
-            households use this server&apos;s Google and Claude keys.
-          </p>
-        </section>
-      )}
 
       {session.isAdmin && (
         <section>

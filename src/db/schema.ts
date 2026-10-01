@@ -23,16 +23,36 @@ const now = sql`(unixepoch() * 1000)`;
  * Account 1 is created by a migration and gets its password from APP_PASSWORD
  * on first start; it's the admin that can add the others.
  */
+/**
+ * A group (a household): its own places, categories, inbox and Shortcut token.
+ * People join with its join code. The first group on a server is the admin
+ * one (sees Google usage and backups). `login`, `passwordHash`, `members` and
+ * `sessionVersion` are from the old password login and no longer used.
+ */
 export const accounts = sqliteTable("accounts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(), // shown to others, e.g. "Mal & Sam"
-  login: text("login").notNull().unique(), // typed at login, lowercase
-  passwordHash: text("password_hash"), // scrypt; null only before first start
+  login: text("login").notNull().unique(),
+  passwordHash: text("password_hash"),
   members: text("members", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
-  ingestToken: text("ingest_token").unique(), // for this household's iOS Shortcut
-  sessionVersion: integer("session_version").notNull().default(1), // bump to log everyone out
+  ingestToken: text("ingest_token").unique(), // for this group's iOS Shortcut
+  joinCode: text("join_code").unique(), // 8 characters, stored without the dash
+  sessionVersion: integer("session_version").notNull().default(1),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now),
+});
+
+/** A person, signed in with Google. `accountId` is their group (null until they create or join one). */
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  googleSub: text("google_sub").notNull().unique(),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  givenName: text("given_name"),
+  picture: text("picture"),
+  accountId: integer("account_id").references(() => accounts.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now),
+  lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }).notNull().default(now),
 });
 
 /** Editable category list, per account. `slug` is what places reference. */
@@ -241,6 +261,7 @@ export const shares = sqliteTable(
 );
 
 export type Account = typeof accounts.$inferSelect;
+export type User = typeof users.$inferSelect;
 export type Share = typeof shares.$inferSelect;
 export type Place = typeof places.$inferSelect;
 export type Ingest = typeof ingests.$inferSelect;
