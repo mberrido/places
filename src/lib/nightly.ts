@@ -4,6 +4,7 @@ import path from "node:path";
 import { DATABASE_PATH, db } from "@/db";
 import { googleConfigured } from "./google";
 import { failStuckIngests } from "./ingest";
+import { prunePhotoCache } from "./photo-cache";
 import { refreshPlace, stalePlaceIds } from "./places";
 
 // Nightly housekeeping at ~03:00 (the container runs with TZ=Europe/London):
@@ -70,6 +71,11 @@ export async function runNightly() {
     failStuckIngests();
   } catch (e) {
     errors.push(`inbox: ${(e as Error).message}`);
+  }
+  try {
+    prunePhotoCache();
+  } catch (e) {
+    errors.push(`photo cache: ${(e as Error).message}`);
   }
   let refreshed = 0;
   if (googleConfigured()) {

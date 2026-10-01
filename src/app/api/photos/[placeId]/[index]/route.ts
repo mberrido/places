@@ -2,16 +2,12 @@ import { after, type NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireSession } from "@/lib/auth";
-import { fetchPhoto, googleConfigured } from "@/lib/google";
+import { GoogleUnavailable, googleConfigured } from "@/lib/google";
+import { getPhoto } from "@/lib/photo-cache";
 import { refreshPlace } from "@/lib/places";
 
-// Server proxy for Google place photos: the API key never reaches the browser,
-// and photos are only held briefly (browser cache + a small in-memory LRU),
-// not re-hosted.
-const MAX_ENTRIES = 150;
-const TTL_MS = 24 * 3600 * 1000;
-const memory = new Map<string, { at: number; bytes: Buffer; contentType: string }>();
-
+// Photos of a saved place, through the server (the API key never reaches the
+// browser) and the on-disk photo cache (one Google call per photo per 30 days).
 const WIDTHS = [240, 480, 960, 1600];
 
 export async function GET(req: NextRequest, ctx: RouteContext<"/api/photos/[placeId]/[index]">) {
@@ -30,20 +26,13 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/api/photos/[plac
   const photo = cache?.photos?.[Number(index)];
   if (!photo || !googleConfigured()) return new Response("Not found", { status: 404 });
 
-  const key = `${photo.name}@${width}`;
-  const hit = memory.get(key);
-  if (hit && Date.now() - hit.at < TTL_MS) return image(hit.bytes, hit.contentType);
-
   try {
-    const { bytes, contentType } = await fetchPhoto(photo.name, width);
-    memory.delete(key);
-    memory.set(key, { at: Date.now(), bytes, contentType });
-    while (memory.size > MAX_ENTRIES) memory.delete(memory.keys().next().value!);
-    return image(bytes, contentType);
+    return image(await getPhoto(photo.name, width));
   } catch (e) {
-    console.error(`photo ${placeId}/${index}:`, (e as Error).message);
-    // Photo names expire. If this cache entry is more than a day old, refresh it
-    // (at most once a day per place) so the next view gets working photos.
+    if (!(e instanceof GoogleUnavailable)) throw e;
+    console.error(`photo ${placeId}/${index}:`, e.message);
+    // Photo names expire. If this place's Google data is more than a day old,
+    // refresh it (at most once a day) so the next view gets working photos.
     if (cache && Date.now() - cache.refreshed.getTime() > 24 * 3600 * 1000) {
       after(() => refreshPlace(Number(placeId), { force: true }));
     }
@@ -51,9 +40,9 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/api/photos/[plac
   }
 }
 
-function image(bytes: Buffer, contentType: string) {
+function image(bytes: Buffer) {
   return new Response(new Uint8Array(bytes), {
     // Vary: Cookie so a browser shared by two households never reuses the other's cached photo.
-    headers: { "Content-Type": contentType, "Cache-Control": "private, max-age=86400", Vary: "Cookie" },
+    headers: { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=604800", Vary: "Cookie" },
   });
 }

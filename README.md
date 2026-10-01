@@ -206,9 +206,16 @@ Google's terms let us keep a `place_id` indefinitely, but other Places content
   and are refreshed when you open a place whose data is older than 30 days (in
   the background, after the page has loaded), or when you tap
   **Refresh Google data**, and every night by the nightly job (see Backups).
-- Photos are never stored. `/api/photos/…` fetches them from the Places Photo
-  endpoint through the server (keeping the key private), and they're cached
-  briefly in the browser and in memory.
+- Photos are fetched from the Places Photo endpoint through the server
+  (keeping the key private) and cached on disk in `data/photo-cache` for 30
+  days, the same as the rest of the Google data. Each photo is fetched once at
+  1600px and smaller sizes are made from it, so a photo costs one call a
+  month however often it's shown. The nightly job clears expired photos.
+- Search results are cached too: Text Search for a week, Near me for an hour
+  in the same spot, place details for an hour.
+- **Monthly caps:** each Google SKU stops at its free allowance for the
+  month (shown in Settings, marked *Paused* when reached), so the app can't
+  run up a bill. Set `GOOGLE_ALLOW_OVER_FREE=1` to lift them.
 - Search requests share a session token with the Details call that follows,
   so Google bills the whole search as one session. Previewing a place and then
   saving it costs one Details call, not two.

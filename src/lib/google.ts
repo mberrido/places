@@ -1,5 +1,5 @@
 import "server-only";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { OpeningHours, PhotoRef } from "@/db/schema";
 
@@ -21,8 +21,43 @@ export function googleConfigured() {
 /** SKUs we count. Keys are what Settings shows. */
 export type GoogleApi = "autocomplete" | "details" | "details_location" | "photo" | "text_search" | "nearby_search";
 
+/**
+ * Approximate free monthly calls per SKU (Google Maps Platform pricing). The
+ * app stops calling an API once this month's count reaches its allowance, so
+ * it can't run up a bill; that feature pauses until the 1st. Set
+ * GOOGLE_ALLOW_OVER_FREE=1 to lift the caps.
+ */
+export const FREE_MONTHLY: Record<GoogleApi, number> = {
+  details: 1000,
+  details_location: 10000,
+  photo: 1000,
+  autocomplete: 10000,
+  text_search: 1000,
+  nearby_search: 1000,
+};
+
+const thisMonth = () => new Date().toISOString().slice(0, 7);
+
+function usedThisMonth(api: GoogleApi) {
+  return (
+    db()
+      .select({ count: schema.apiUsage.count })
+      .from(schema.apiUsage)
+      .where(and(eq(schema.apiUsage.month, thisMonth()), eq(schema.apiUsage.api, api)))
+      .get()?.count ?? 0
+  );
+}
+
+/** Throws (so callers degrade gracefully) if this API has used its free allowance this month. */
+function checkAllowance(api: GoogleApi) {
+  if (process.env.GOOGLE_ALLOW_OVER_FREE === "1") return;
+  if (usedThisMonth(api) >= FREE_MONTHLY[api]) {
+    throw new GoogleUnavailable(`Google ${api} has used its free allowance for this month; paused until the 1st`);
+  }
+}
+
 export function countUsage(api: GoogleApi) {
-  const month = new Date().toISOString().slice(0, 7);
+  const month = thisMonth();
   try {
     db()
       .insert(schema.apiUsage)
@@ -42,6 +77,7 @@ async function call<T>(api: GoogleApi, url: string, init: RequestInit & { fieldM
   headers.set("X-Goog-Api-Key", apiKey());
   if (init.fieldMask) headers.set("X-Goog-FieldMask", init.fieldMask);
   if (init.body) headers.set("Content-Type", "application/json");
+  checkAllowance(api);
   countUsage(api);
   let res: Response;
   try {
@@ -226,7 +262,7 @@ function normalise(p: RawPlace): PlaceDetails {
 
 // Short-lived memo so "preview then save" costs one Details call, not two.
 const detailsMemo = new Map<string, { at: number; details: PlaceDetails }>();
-const MEMO_MS = 10 * 60 * 1000;
+const MEMO_MS = 60 * 60 * 1000;
 
 export async function placeDetails(googlePlaceId: string, sessionToken?: string) {
   const memo = detailsMemo.get(googlePlaceId);
@@ -274,8 +310,28 @@ export type TextSearchResult = {
   lng: number | null;
 };
 
-/** "Name + town" → the top few Google matches, for one-tap confirmation. */
+/** Small in-memory cache so repeated searches don't cost repeated calls. */
+function memo<T>(ttlMs: number, limit = 300) {
+  const map = new Map<string, { at: number; value: T }>();
+  return async (key: string, load: () => Promise<T>): Promise<T> => {
+    const hit = map.get(key);
+    if (hit && Date.now() - hit.at < ttlMs) return hit.value;
+    const value = await load();
+    map.set(key, { at: Date.now(), value });
+    if (map.size > limit) map.delete(map.keys().next().value!);
+    return value;
+  };
+}
+
+const textSearchMemo = memo<TextSearchResult[]>(7 * 24 * 3600 * 1000);
+const nearbyMemo = memo<TextSearchResult[]>(60 * 60 * 1000);
+
+/** "Name + town" → the top few Google matches, for one-tap confirmation. Cached for a week. */
 export async function textSearch(query: string, max = 3): Promise<TextSearchResult[]> {
+  return textSearchMemo(`${query.toLowerCase().trim()}|${max}`, () => textSearchUncached(query, max));
+}
+
+async function textSearchUncached(query: string, max: number): Promise<TextSearchResult[]> {
   const data = await call<{ places?: RawPlace[] }>("text_search", `${BASE}/places:searchText`, {
     method: "POST",
     body: JSON.stringify({ textQuery: query, pageSize: max, languageCode: "en-GB", regionCode: "GB" }),
@@ -314,6 +370,12 @@ export type NearbyGroup = keyof typeof NEARBY_GROUPS | "all";
 
 /** "We just drove past something good": what's within `radius` metres, nearest first. */
 export async function nearbySearch(center: LatLng, radius: number, group: NearbyGroup) {
+  // Cached for an hour per ~100 m square, so reopening "near me" in the same spot is free.
+  const key = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}|${radius}|${group}`;
+  return nearbyMemo(key, () => nearbySearchUncached(center, radius, group));
+}
+
+async function nearbySearchUncached(center: LatLng, radius: number, group: NearbyGroup) {
   const types =
     group === "all" ? [...NEARBY_GROUPS.food, ...NEARBY_GROUPS.stay, ...NEARBY_GROUPS.do] : [...NEARBY_GROUPS[group]];
   const data = await call<{ places?: RawPlace[] }>("nearby_search", `${BASE}/places:searchNearby`, {
@@ -358,6 +420,7 @@ export async function fetchPhoto(photoName: string, maxWidthPx: number) {
   const url = new URL(`${BASE}/${photoName}/media`);
   url.searchParams.set("maxWidthPx", String(maxWidthPx));
   url.searchParams.set("key", apiKey());
+  checkAllowance("photo");
   countUsage("photo");
   const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), cache: "no-store" });
   if (!res.ok) throw new GoogleUnavailable(`Google photo ${res.status}`);

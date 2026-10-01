@@ -3,7 +3,7 @@ import { db, schema } from "@/db";
 import { getAccount, listAccounts } from "@/lib/accounts";
 import { requireSession } from "@/lib/auth";
 import { claudeConfigured } from "@/lib/extract";
-import { googleConfigured, type GoogleApi } from "@/lib/google";
+import { FREE_MONTHLY, googleConfigured, type GoogleApi } from "@/lib/google";
 import { getCategories } from "@/lib/places";
 import { logout } from "../../login/actions";
 import { headers } from "next/headers";
@@ -15,15 +15,13 @@ import { ShareSetup } from "./share-setup";
 
 export const metadata = { title: "Settings" };
 
-// Approximate free monthly calls per SKU (Google Maps Platform, 2025 pricing).
-// Informational only: check Google Cloud billing for the real numbers.
-const APIS: { api: GoogleApi; label: string; free: number }[] = [
-  { api: "details", label: "Place Details", free: 1000 },
-  { api: "details_location", label: "Place Details (location only)", free: 10000 },
-  { api: "photo", label: "Place Photos", free: 1000 },
-  { api: "autocomplete", label: "Autocomplete", free: 10000 },
-  { api: "text_search", label: "Text Search", free: 1000 },
-  { api: "nearby_search", label: "Nearby Search", free: 1000 },
+const APIS: { api: GoogleApi; label: string }[] = [
+  { api: "details", label: "Place Details" },
+  { api: "details_location", label: "Place Details (location only)" },
+  { api: "photo", label: "Place Photos" },
+  { api: "autocomplete", label: "Autocomplete" },
+  { api: "text_search", label: "Text Search" },
+  { api: "nearby_search", label: "Nearby Search" },
 ];
 
 export default async function SettingsPage() {
@@ -95,7 +93,8 @@ export default async function SettingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {APIS.map(({ api, label, free }) => {
+                {APIS.map(({ api, label }) => {
+                  const free = FREE_MONTHLY[api];
                   const n = count(thisMonth, api);
                   const pct = Math.min(100, (n / free) * 100);
                   return (
@@ -113,6 +112,9 @@ export default async function SettingsPage() {
                         <td key={m} className="px-3 py-2 text-right align-top">
                           {count(m, api).toLocaleString("en-GB")}
                           {m === thisMonth && <span className="text-muted"> / {free.toLocaleString("en-GB")}</span>}
+                        {m === thisMonth && count(m, api) >= free && (
+                          <span className="block text-xs font-semibold text-danger">Paused</span>
+                        )}
                         </td>
                       ))}
                     </tr>
@@ -122,8 +124,9 @@ export default async function SettingsPage() {
             </table>
           </div>
           <p className="mt-2 text-xs text-muted">
-            Calls this app has made, against the approximate free monthly allowance for each SKU. Google Cloud billing
-            is the source of truth.
+            Calls this app has made, against the approximate free monthly allowance for each SKU. When one reaches its
+            allowance the app stops using it until the 1st (set <code>GOOGLE_ALLOW_OVER_FREE=1</code> to lift this).
+            Photos are cached on the server for 30 days, so each costs one call a month however often it&apos;s shown.
           </p>
         </section>
       )}
