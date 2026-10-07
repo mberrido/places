@@ -46,6 +46,8 @@ export async function removeMemberAction(userId: number) {
 export async function leaveGroup() {
   const s = await requireSession();
   removeMember(s.accountId, s.userId);
+  regenerateJoinCode(s.accountId);
+  regenerateIngestToken(s.accountId);
   redirect("/welcome");
 }
 

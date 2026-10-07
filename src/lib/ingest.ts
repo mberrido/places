@@ -332,12 +332,16 @@ export type Pick = {
 /** Saves the ticked places and closes the ingest. Returns the new (or already-saved) place ids. */
 export async function confirmIngest(accountId: number, id: number, picks: Pick[], addedBy: string) {
   const ingest = getIngest(accountId, id);
-  if (!ingest?.places) throw new Error("Nothing to confirm");
+  if (!ingest?.places || ingest.status !== "ready") throw new Error("Nothing to confirm");
   const ids: number[] = [];
+  const seen = new Set<number>();
 
   for (const pick of picks) {
     const extracted = ingest.places[pick.index];
-    if (!extracted) continue;
+    if (!extracted || seen.has(pick.index)) continue;
+    seen.add(pick.index);
+    // Only one of the Google matches we offered (each costs a paid Details call).
+    if (pick.googlePlaceId && !extracted.candidates.some((c) => c.googlePlaceId === pick.googlePlaceId)) continue;
 
     if (pick.googlePlaceId) {
       const existing = findByGoogleId(accountId, pick.googlePlaceId);

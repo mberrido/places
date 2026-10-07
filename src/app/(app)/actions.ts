@@ -149,7 +149,9 @@ export async function removeTripPhoto(photoId: number) {
 export async function refreshGoogleData(id: number) {
   const { accountId } = await requireSession();
   assertOwn(accountId, id);
-  await refreshPlace(id, { force: true });
+  // At most once an hour per place: each refresh is a paid Google call.
+  const refreshed = getPlace(accountId, id)?.google?.lastRefreshedAt;
+  if (!refreshed || Date.now() - refreshed.getTime() > 3600_000) await refreshPlace(id, { force: true });
   refresh();
 }
 

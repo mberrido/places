@@ -9,26 +9,39 @@ import { ExtractionUnavailable } from "./extract";
  * Counted in api_usage, keyed by day rather than month.
  */
 const DAILY_LIMIT = Number(process.env.CLAUDE_DAILY_LIMIT) || 100;
+/** Across all groups, so making new groups can't get around the per-group cap. */
+const SERVER_DAILY_LIMIT = Number(process.env.CLAUDE_SERVER_DAILY_LIMIT) || 300;
 
-/** Counts one Claude call for the group, or throws if today's allowance is used up. */
-export function spendClaudeCall(accountId: number) {
-  const day = new Date().toISOString().slice(0, 10);
-  const api = `claude:${accountId}`;
-  const d = db();
-  const used =
-    d
+function used(day: string, api: string) {
+  return (
+    db()
       .select({ count: schema.apiUsage.count })
       .from(schema.apiUsage)
       .where(and(eq(schema.apiUsage.month, day), eq(schema.apiUsage.api, api)))
-      .get()?.count ?? 0;
-  if (used >= DAILY_LIMIT) {
-    throw new ExtractionUnavailable(`You've used today's ${DAILY_LIMIT} Claude reads; try again tomorrow.`);
-  }
-  d.insert(schema.apiUsage)
+      .get()?.count ?? 0
+  );
+}
+
+function count(day: string, api: string) {
+  db()
+    .insert(schema.apiUsage)
     .values({ month: day, api, count: 1 })
     .onConflictDoUpdate({
       target: [schema.apiUsage.month, schema.apiUsage.api],
       set: { count: sql`${schema.apiUsage.count} + 1` },
     })
     .run();
+}
+
+/** Counts one Claude call for the group, or throws if today's allowance (the group's or the server's) is used up. */
+export function spendClaudeCall(accountId: number) {
+  const day = new Date().toISOString().slice(0, 10);
+  if (used(day, `claude:${accountId}`) >= DAILY_LIMIT) {
+    throw new ExtractionUnavailable(`You've used today's ${DAILY_LIMIT} Claude reads; try again tomorrow.`);
+  }
+  if (used(day, "claude:all") >= SERVER_DAILY_LIMIT) {
+    throw new ExtractionUnavailable("Claude reads are paused for today on this server; try again tomorrow.");
+  }
+  count(day, `claude:${accountId}`);
+  count(day, "claude:all");
 }

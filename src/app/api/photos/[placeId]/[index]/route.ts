@@ -28,11 +28,11 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/api/photos/[plac
     .where(and(eq(schema.googleCache.placeId, Number(placeId)), eq(schema.places.accountId, accountId)))
     .get();
   // Only the first photo is shown anywhere, so only it may cost a Google call.
-  const photo = Number(index) === 0 ? cache?.photos?.[0] : undefined;
+  const photo = index === "0" ? cache?.photos?.[0] : undefined;
   if (!photo || !googleConfigured()) return new Response("Not found", { status: 404 });
 
   try {
-    return image(await getPhoto(photo.name, width, `place:${cache!.googlePlaceId}:${index}`));
+    return image(await getPhoto(photo.name, width, `place:${cache!.googlePlaceId}:0`));
   } catch (e) {
     if (!(e instanceof GoogleUnavailable)) throw e;
     console.error(`photo ${placeId}/${index}:`, e.message);

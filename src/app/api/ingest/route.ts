@@ -1,6 +1,7 @@
 import { after, type NextRequest } from "next/server";
 import { accountByIngestToken } from "@/lib/accounts";
 import { clientIp, isLockedOut, recordFailure } from "@/lib/rate-limit";
+import { boundedBody } from "@/lib/bounded-body";
 import { IngestError, MAX_REQUEST_BYTES, processIngest, submitIngest, submitScreenshot } from "@/lib/ingest";
 
 /**
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
     return reply(401, "Wrong token. Check the Authorization header in the Shortcut.");
   }
 
-  if (Number(req.headers.get("content-length")) > MAX_REQUEST_BYTES) return reply(413, "That's too big (15 MB max).");
+  const body = await boundedBody(req, MAX_REQUEST_BYTES).catch(() => null);
+  if (!body) return reply(413, "That's too big (15 MB max).");
 
   let input = "";
   let by: string | null = null;
@@ -33,17 +35,17 @@ export async function POST(req: NextRequest) {
   const type = req.headers.get("content-type") ?? "";
   try {
     if (type.includes("multipart/form-data") || type.includes("application/x-www-form-urlencoded")) {
-      const form = await req.formData();
+      const form = await body.formData();
       const field = form.get("image") ?? form.get("input");
       if (field instanceof File && field.size > 0) image = field;
       else input = String(form.get("input") ?? form.get("url") ?? form.get("text") ?? "");
       by = form.get("by") ? String(form.get("by")) : null;
     } else if (type.includes("application/json")) {
-      const body = (await req.json()) as Record<string, unknown>;
-      input = String(body.input ?? body.url ?? body.text ?? "");
-      by = typeof body.by === "string" ? body.by : null;
+      const json = (await body.json()) as Record<string, unknown>;
+      input = String(json.input ?? json.url ?? json.text ?? "");
+      by = typeof json.by === "string" ? json.by : null;
     } else {
-      input = await req.text();
+      input = await body.text();
     }
   } catch {
     return reply(400, "Couldn't read the request body.");

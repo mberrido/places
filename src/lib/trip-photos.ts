@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import sharp, { type OutputInfo } from "sharp";
 import { DATABASE_PATH, db, schema } from "@/db";
 
@@ -12,6 +12,36 @@ import { DATABASE_PATH, db, schema } from "@/db";
 
 const DIR = path.join(/*turbopackIgnore: true*/ path.dirname(DATABASE_PATH), "trip-photos");
 const MAX_PER_PLACE = 200;
+const MAX_PER_ACCOUNT = 3000; // about 3 GB at ~1 MB a photo
+const MIN_FREE_BYTES = 2 * 1024 ** 3; // keep 2 GB free for the database and backups
+
+// One photo at a time: decoding big images is memory-hungry on a small NAS,
+// and it keeps the count checks and inserts in order.
+let queue: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const run = queue.then(task, task);
+  queue = run.catch(() => {});
+  return run;
+}
+
+function accountPhotoCount(accountId: number) {
+  return db()
+    .select({ n: sql<number>`count(*)` })
+    .from(schema.tripPhotos)
+    .innerJoin(schema.places, eq(schema.places.id, schema.tripPhotos.placeId))
+    .where(eq(schema.places.accountId, accountId))
+    .get()!.n;
+}
+
+function freeBytes() {
+  try {
+    fs.mkdirSync(DIR, { recursive: true });
+    const s = fs.statfsSync(DIR);
+    return s.bavail * s.bsize;
+  } catch {
+    return Infinity;
+  }
+}
 
 /** A problem to show the person as is. */
 export class PhotoError extends Error {}
@@ -37,15 +67,21 @@ export function listTripPhotos(placeId: number) {
     .all();
 }
 
-export async function addTripPhoto(accountId: number, placeId: number, bytes: Buffer, addedBy: string) {
+export function addTripPhoto(accountId: number, placeId: number, bytes: Buffer, addedBy: string) {
+  return oneAtATime(() => saveTripPhoto(accountId, placeId, bytes, addedBy));
+}
+
+async function saveTripPhoto(accountId: number, placeId: number, bytes: Buffer, addedBy: string) {
   if (!ownsPlace(accountId, placeId)) throw new PhotoError("Place not found.");
   if (listTripPhotos(placeId).length >= MAX_PER_PLACE) throw new PhotoError(`That's the limit of ${MAX_PER_PLACE} photos for one place.`);
+  if (accountPhotoCount(accountId) >= MAX_PER_ACCOUNT) throw new PhotoError(`That's the limit of ${MAX_PER_ACCOUNT} photos for your group.`);
+  if (freeBytes() < MIN_FREE_BYTES) throw new PhotoError("The server is nearly out of space, so photos are paused.");
 
   let full: { data: Buffer; info: OutputInfo };
   let thumb: Buffer;
   try {
     // limitInputPixels: refuse absurdly large images rather than run out of memory.
-    const base = sharp(bytes, { limitInputPixels: 60_000_000 }).rotate();
+    const base = sharp(bytes, { limitInputPixels: 40_000_000 }).rotate();
     full = await base
       .clone()
       .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
@@ -60,11 +96,16 @@ export async function addTripPhoto(accountId: number, placeId: number, bytes: Bu
   fs.mkdirSync(DIR, { recursive: true });
   fs.writeFileSync(filePath(file, "full"), full.data);
   fs.writeFileSync(filePath(file, "thumb"), thumb);
-  return db()
-    .insert(schema.tripPhotos)
-    .values({ placeId, file, width: full.info.width, height: full.info.height, addedBy })
-    .returning({ id: schema.tripPhotos.id })
-    .get().id;
+  try {
+    return db()
+      .insert(schema.tripPhotos)
+      .values({ placeId, file, width: full.info.width, height: full.info.height, addedBy })
+      .returning({ id: schema.tripPhotos.id })
+      .get().id;
+  } catch (e) {
+    removeFiles([file]); // e.g. the place was deleted meanwhile
+    throw e;
+  }
 }
 
 /** The JPEG for one of this household's photos, or null. */

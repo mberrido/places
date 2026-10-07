@@ -53,13 +53,15 @@ export async function submitCaption(id: number, caption: string) {
   refresh();
 }
 
-const Picks = z.array(
-  z.object({
-    index: z.number().int().min(0),
-    googlePlaceId: z.string().min(1).nullable(),
-    category: z.string().min(1),
-  }),
-);
+const Picks = z
+  .array(
+    z.object({
+      index: z.number().int().min(0).max(9),
+      googlePlaceId: z.string().min(1).max(300).nullable(),
+      category: z.string().min(1).max(40),
+    }),
+  )
+  .max(10);
 
 export async function confirmPlaces(id: number, picks: z.input<typeof Picks>) {
   const session = await requireSession();
