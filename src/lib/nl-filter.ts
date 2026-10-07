@@ -12,14 +12,14 @@ const MODEL = "claude-opus-5-5";
 const SYSTEM = `You turn a short request for a household's saved-places app into filter settings. The app lists places they want to go (hotels, restaurants, cafés, bars, attractions, days out, shops).
 
 Only set what the request asks for; leave everything else empty or null. Examples:
-- "hotel within 50km this weekend" → categories [hotel], near me, 50 km, when weekend.
+- "hotel within 30 miles this weekend" → categories [hotel], near me, 30 miles, when weekend.
 - "somewhere for lunch near Padstow tomorrow" → categories [restaurant, cafe], near the place "Padstow", when dates (tomorrow), text null.
 - "best rated bars we haven't been to" → categories [bar], status want, sort rating.
 - "dog friendly pubs" → categories [bar], plus the "dog friendly" tag if it's in the tag list, otherwise put "dog friendly" in text.
 
 Rules:
 - "near me", "nearby", "around here" mean the user's location. A named town or place means near that place.
-- Distances in miles: convert to km (1 mile = 1.6 km) and round.
+- Distances are in miles. If the request gives km, convert to miles (1 km = 0.62 miles) and round.
 - Only use tags from the given list. text is a keyword search over each place's name, town, notes and tags, and every word must match, so only put distinctive words there that a matching place would actually contain (e.g. "sushi", "rooftop", "Cornwall"). Never put generic words like lunch, dinner, food, drinks, somewhere, place or trip in text; the category already covers them. Usually text is null.
 - "this weekend" / "next weekend" / "today" have their own values; other days or ranges use dates with from/to (YYYY-MM-DD), worked out from today's date.
 - Status: "we've been", "visited" → been; "haven't been", "want to try" → want; otherwise null.
@@ -42,7 +42,7 @@ export async function parseNaturalFilter(
     status: z.enum(["want", "been", "all"]).nullable(),
     near: z.enum(["none", "me", "place"]),
     near_place: z.string().nullable().describe("Town or place name when near is 'place'"),
-    km: z.number().nullable(),
+    miles: z.number().nullable(),
     when: z.enum(["none", "today", "weekend", "nextweekend", "dates"]),
     from: z.string().nullable().describe("YYYY-MM-DD when 'when' is dates"),
     to: z.string().nullable().describe("YYYY-MM-DD when 'when' is dates"),
@@ -51,7 +51,7 @@ export async function parseNaturalFilter(
     tags: z.array(z.string()),
     text: z.string().nullable(),
     sort: z.enum(["none", "recent", "distance", "rating"]),
-    explanation: z.string().describe("A few words summarising the filters, e.g. 'Hotels within 50 km of you, this weekend'"),
+    explanation: z.string().describe("A few words summarising the filters, e.g. 'Hotels within 30 miles of you, this weekend'"),
   });
 
   const now = new Date();
@@ -88,7 +88,7 @@ export async function parseNaturalFilter(
   const filters: Partial<Filters> = {
     categories: out.categories,
     status: out.status ?? "want",
-    km: out.km && out.km > 0 ? Math.round(out.km) : null,
+    miles: out.miles && out.miles > 0 ? Math.round(out.miles) : null,
     minRating: out.min_rating && out.min_rating > 0 ? Math.min(out.min_rating, 5) : null,
     prices: out.prices.filter((p) => p >= 1 && p <= 4),
     tags: out.tags.map((t) => t.toLowerCase()).filter((t) => tags.includes(t)),
@@ -115,10 +115,10 @@ export async function parseNaturalFilter(
       filters.origin = { kind: "point", lat: loc.lat, lng: loc.lng, label: first.main };
     } catch {
       warning = `Couldn't find "${out.near_place}" on the map, so distance isn't filtered.`;
-      filters.km = null;
+      filters.miles = null;
     }
   }
-  if (!filters.origin) filters.km = null;
+  if (!filters.origin) filters.miles = null;
 
   return { filters, explanation: out.explanation, warning };
 }

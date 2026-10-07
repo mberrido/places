@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Category } from "@/db/schema";
-import { formatKm, type Filtered } from "@/lib/filters";
+import { formatDistance, type Filtered } from "@/lib/filters";
 import { OurRating } from "./place-bits";
 
 /** A place in the list: rounded photo, serif name, place and a short accent line. */
@@ -26,7 +26,7 @@ export function PlaceCard({
   const facts = [
     place.rating != null ? `★ ${place.rating.toFixed(1)}` : null,
     place.priceLevel ? "£".repeat(place.priceLevel) : null,
-    place.distanceKm != null ? `${formatKm(place.distanceKm)} away` : null,
+    place.distanceKm != null ? `${formatDistance(place.distanceKm)} away` : null,
   ].filter(Boolean);
   return (
     <Link

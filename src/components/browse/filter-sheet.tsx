@@ -46,8 +46,8 @@ export function FilterSheet({
   onClose: () => void;
 }) {
   const [choosingPlace, setChoosingPlace] = useState(false);
-  const [customKm, setCustomKm] = useState(
-    f.km && !DISTANCE_PRESETS.includes(f.km) ? String(f.km) : "",
+  const [customMiles, setCustomMiles] = useState(
+    f.miles && !DISTANCE_PRESETS.includes(f.miles) ? String(f.miles) : "",
   );
 
   useEffect(() => {
@@ -107,36 +107,36 @@ export function FilterSheet({
             )}
             {f.origin && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <Pill active={!f.km} onClick={() => update({ km: null })}>
+                <Pill active={!f.miles} onClick={() => update({ miles: null })}>
                   Any
                 </Pill>
-                {DISTANCE_PRESETS.map((km) => (
+                {DISTANCE_PRESETS.map((miles) => (
                   <Pill
-                    key={km}
-                    active={f.km === km}
+                    key={miles}
+                    active={f.miles === miles}
                     onClick={() => {
-                      setCustomKm("");
-                      update({ km });
+                      setCustomMiles("");
+                      update({ miles });
                     }}
                   >
-                    {km} km
+                    {miles} mi
                   </Pill>
                 ))}
                 <label className="inline-flex items-center gap-1 rounded-full border border-border bg-surface py-1 pl-3 pr-2 text-sm">
                   <input
                     inputMode="numeric"
-                    value={customKm}
+                    value={customMiles}
                     placeholder="Custom"
                     onChange={(e) => {
                       const v = e.target.value.replace(/[^\d.]/g, "");
-                      setCustomKm(v);
+                      setCustomMiles(v);
                       const n = Number(v);
-                      if (n > 0) update({ km: n });
+                      if (n > 0) update({ miles: n });
                     }}
                     className="w-16 bg-transparent text-sm outline-none"
                     style={{ fontSize: 16 }}
                   />
-                  km
+                  mi
                 </label>
               </div>
             )}

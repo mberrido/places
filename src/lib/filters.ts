@@ -38,7 +38,7 @@ export type Filters = {
   status: "want" | "been" | "all";
   categories: string[];
   origin: Origin | null;
-  km: number | null;
+  miles: number | null;
   minRating: number | null;
   prices: number[];
   tags: string[];
@@ -47,7 +47,8 @@ export type Filters = {
   view: View;
 };
 
-export const DISTANCE_PRESETS = [5, 10, 25, 50, 100];
+export const DISTANCE_PRESETS = [5, 10, 25, 50, 100]; // miles
+export const KM_PER_MILE = 1.609344;
 export const RATING_PRESETS = [3.5, 4, 4.5];
 
 const STATUS_VALUES = ["want", "been", "all"] as const;
@@ -79,7 +80,8 @@ export function parseFilters(sp: URLSearchParams): Filters {
     status: (STATUS_VALUES as readonly string[]).includes(status ?? "") ? (status as Filters["status"]) : "want",
     categories: list(sp.get("cat")),
     origin,
-    km: num(sp.get("km")),
+    // Miles; links from before the switch used km.
+    miles: num(sp.get("mi")) ?? (num(sp.get("km")) ? Math.round(num(sp.get("km"))! / KM_PER_MILE) : null),
     minRating: num(sp.get("rating")),
     prices: list(sp.get("price")).map(Number).filter((n) => n >= 0 && n <= 4),
     tags: list(sp.get("tags")),
@@ -111,7 +113,7 @@ export function serialiseFilters(f: Filters): string {
     sp.set("near", `${f.origin.lat.toFixed(5)},${f.origin.lng.toFixed(5)}`);
     sp.set("nearName", f.origin.label);
   }
-  if (f.km && f.origin) sp.set("km", String(f.km));
+  if (f.miles && f.origin) sp.set("mi", String(f.miles));
   if (f.minRating) sp.set("rating", String(f.minRating));
   if (f.prices.length) sp.set("price", f.prices.join(","));
   if (f.tags.length) sp.set("tags", f.tags.join(","));
@@ -194,12 +196,12 @@ export function applyFilters(places: PlaceSummary[], f: Filters, originPoint: { 
     }
     const distanceKm =
       originPoint && p.lat != null && p.lng != null ? haversineKm(originPoint, { lat: p.lat, lng: p.lng }) : null;
-    if (f.km && originPoint) {
+    if (f.miles && originPoint) {
       if (distanceKm == null) {
         noLocation++;
         continue;
       }
-      if (distanceKm > f.km) continue;
+      if (distanceKm > f.miles * KM_PER_MILE) continue;
     }
     let hours: Filtered["hours"] = null;
     if (when && p.category !== "hotel") {
@@ -230,8 +232,10 @@ export function applyFilters(places: PlaceSummary[], f: Filters, originPoint: { 
   return { places: out, noLocation };
 }
 
-export function formatKm(km: number) {
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  if (km < 10) return `${km.toFixed(1)} km`;
-  return `${Math.round(km)} km`;
+/** A distance (given in km) in miles, or yards when it's very close. */
+export function formatDistance(km: number) {
+  const miles = km / KM_PER_MILE;
+  if (miles < 0.25) return `${Math.max(10, Math.round((miles * 1760) / 10) * 10)} yd`;
+  if (miles < 10) return `${miles.toFixed(1)} mi`;
+  return `${Math.round(miles)} mi`;
 }

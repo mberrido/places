@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { TextSearchResult } from "@/lib/google";
-import { formatKm, haversineKm } from "@/lib/filters";
+import { formatDistance, haversineKm } from "@/lib/filters";
 import { locationMessage, useDeviceLocation } from "@/lib/use-location";
 import { Icon } from "@/components/icons";
 import { GoogleRating } from "@/components/place-bits";
@@ -19,10 +19,14 @@ const GROUPS = [
  * "We just drove past something good": what's around the phone right now,
  * nearest first. Tapping one hands its Google id to the normal save form.
  */
+// Half a mile and 2 miles, in metres.
+const NEAR = 800;
+const WIDE = 3200;
+
 export function NearMe({ onPick }: { onPick: (googlePlaceId: string) => Promise<void> }) {
   const { loc, state, request } = useDeviceLocation({ auto: true });
   const [group, setGroup] = useState<(typeof GROUPS)[number][0]>("all");
-  const [radius, setRadius] = useState(500);
+  const [radius, setRadius] = useState(NEAR); // metres, as Google wants
   const [data, setData] = useState<{ key: string; results: TextSearchResult[]; saved: Record<string, number> } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
@@ -79,9 +83,9 @@ export function NearMe({ onPick }: { onPick: (googlePlaceId: string) => Promise<
         ))}
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-muted">
-        <span>Within {radius < 1000 ? `${radius} m` : `${radius / 1000} km`} of you, nearest first</span>
-        <button onClick={() => setRadius(radius === 500 ? 2000 : 500)} className="font-medium text-accent">
-          {radius === 500 ? "Look wider (2 km)" : "Just nearby (500 m)"}
+        <span>Within {radius === NEAR ? "half a mile" : "2 miles"} of you, nearest first</span>
+        <button onClick={() => setRadius(radius === NEAR ? WIDE : NEAR)} className="font-medium text-accent">
+          {radius === NEAR ? "Look wider (2 miles)" : "Just nearby (½ mile)"}
         </button>
       </div>
 
@@ -104,7 +108,7 @@ export function NearMe({ onPick }: { onPick: (googlePlaceId: string) => Promise<
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">
                     <span className="min-w-0 flex-1 truncate font-medium">{r.name}</span>
-                    {km != null && <span className="shrink-0 text-xs text-muted tabular-nums">{formatKm(km)}</span>}
+                    {km != null && <span className="shrink-0 text-xs text-muted tabular-nums">{formatDistance(km)}</span>}
                   </span>
                   <span className="block truncate text-xs text-muted">{r.address}</span>
                   <span className="mt-0.5 flex items-center gap-2">

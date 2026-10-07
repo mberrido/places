@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   if (!googleConfigured()) return Response.json({ error: "Google isn't set up" }, { status: 503 });
   const g = p.get("type");
   const group: NearbyGroup = g && (g === "all" || g in NEARBY_GROUPS) ? (g as NearbyGroup) : "all";
-  const radius = Number(p.get("radius")) || 500;
+  const radius = Number(p.get("radius")) || 800;
   try {
     const results = await nearbySearch({ lat, lng }, radius, group);
     const saved = savedGoogleIds(accountId, results.map((r) => r.googlePlaceId));

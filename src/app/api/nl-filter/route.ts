@@ -5,7 +5,7 @@ import { ExtractionUnavailable } from "@/lib/extract";
 import { parseNaturalFilter } from "@/lib/nl-filter";
 import { allTags, getCategories } from "@/lib/places";
 
-// "hotel within 50km this weekend" → filter settings for the browse page to apply (visibly).
+// "hotel within 30 miles this weekend" → filter settings for the browse page to apply (visibly).
 export async function POST(req: NextRequest) {
   const { accountId } = await requireSession();
   const { text } = (await req.json().catch(() => ({}))) as { text?: string };

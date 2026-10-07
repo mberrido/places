@@ -14,6 +14,7 @@ import {
   serialiseFilters,
   type Filters,
   type PlaceSummary,
+  KM_PER_MILE,
 } from "@/lib/filters";
 import { STATUS_LABELS } from "@/lib/categories";
 import { resolveWhen } from "@/lib/when";
@@ -134,8 +135,8 @@ export function PlacesBrowser({
       ? [
           {
             key: "origin",
-            label: filters.km ? `Within ${filters.km} km of ${originLabel}` : `Near ${originLabel}`,
-            clear: { origin: null, km: null },
+            label: filters.miles ? `Within ${filters.miles} mi of ${originLabel}` : `Near ${originLabel}`,
+            clear: { origin: null, miles: null },
           },
         ]
       : []),
@@ -293,7 +294,7 @@ export function PlacesBrowser({
             places={result.places}
             categories={categories}
             origin={originPoint}
-            radiusKm={filters.km}
+            radiusKm={filters.miles ? filters.miles * KM_PER_MILE : null}
             selectedId={selectedId}
             onSelect={setSelectedId}
             fitKey={fitKey}
